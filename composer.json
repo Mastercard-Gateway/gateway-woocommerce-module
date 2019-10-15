@@ -1,0 +1,9 @@
+{
+    "require": {
+        "php-http/curl-client": "^1.7",
+        "php-http/client-common": "^1.9",
+        "guzzlehttp/psr7": "^1.6",
+        "php-http/logger-plugin": "^1.1",
+        "monolog/monolog": "^1.25"
+    }
+}
