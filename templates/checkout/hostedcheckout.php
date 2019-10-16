@@ -2,7 +2,6 @@
 /**
  * @var Mastercard_Gateway $gateway
  * @var WC_Abstract_Order $order
- * @var Mastercard_Model_CheckoutBuilder $order_builder
  */
 ?>
 

@@ -17,9 +17,8 @@
 
 define( 'MPGS_MODULE_VERSION', '1.0.0' );
 
-require_once dirname( __FILE__ ) . '/JsonConverter.php';
-require_once dirname( __FILE__ ) . '/model/CheckoutBuilder.php';
-require_once dirname( __FILE__ ) . '/Service.php';
+require_once dirname( __FILE__ ) . '/class-checkout-builder.php';
+require_once dirname( __FILE__ ) . '/class-gateway-service.php';
 
 class Mastercard_Gateway extends WC_Payment_Gateway {
 
@@ -108,8 +107,8 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	 * @return string
 	 */
 	public function get_merchant_id() {
-	    return $this->username;
-    }
+		return $this->username;
+	}
 
 	/**
 	 * @param int $forOrderId
@@ -141,7 +140,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			case ( (bool) preg_match( '~/mastercard/v1/session/\d+~', $route ) ):
 				$order = new WC_Order( $request->get_param( 'id' ) );
 
-				$order_builder = new Mastercard_Model_CheckoutBuilder( $order );
+				$order_builder = new Mastercard_CheckoutBuilder( $order );
 				$result        = $this->service->createCheckoutSession(
 					$order_builder->getOrder(),
 					$order_builder->getInteraction(),
@@ -150,8 +149,8 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				);
 				break;
 
-            case '/mastercard/v1/webhook':
-                break;
+			case '/mastercard/v1/webhook':
+				break;
 		}
 
 		return $result;
@@ -192,7 +191,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		set_query_var( 'order', $order );
 		set_query_var( 'gateway', $this );
 
-		load_template( dirname( __FILE__ ) . '/templates/checkout/hostedcheckout.php' );
+		load_template( dirname( __FILE__ ) . '/../templates/checkout/hostedcheckout.php' );
 	}
 
 	/**
@@ -303,10 +302,10 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	 */
 	public function admin_options() {
 		?>
-        <h2><?php _e( 'Mastercard Payment Gateway Services', 'woocommerce' ); ?></h2>
-        <table class="form-table">
+		<h2><?php _e( 'Mastercard Payment Gateway Services', 'woocommerce' ); ?></h2>
+		<table class="form-table">
 			<?php $this->generate_settings_html(); ?>
-        </table> <?php
+		</table> <?php
 	}
 
 	/**

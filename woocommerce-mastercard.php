@@ -46,7 +46,7 @@ class WC_Mastercard {
 
 		define('MPGS_ISO3_COUNTRIES', include plugin_basename('/iso3.php'));
 		require_once plugin_basename( '/vendor/autoload.php' );
-		require_once plugin_basename( 'app/Gateway.php' );
+		require_once plugin_basename( '/includes/class-gateway.php' );
 
 		load_plugin_textdomain( 'mastercard', false, trailingslashit( dirname( plugin_basename( __FILE__ ) ) ) );
 		add_filter( 'woocommerce_payment_gateways', array( $this, 'add_gateways' ) );
