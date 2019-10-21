@@ -97,16 +97,22 @@ class Mastercard_CheckoutBuilder {
 	}
 
 	/**
+	 * @param string|null $returnUrl
 	 * @return array
 	 */
-	public function getInteraction() {
+	public function getInteraction($returnUrl = null) {
 		return array(
 			'operation' => 'PURCHASE',
 			'merchant'  => array(
 				'name' => esc_html( get_bloginfo( 'name', 'display' ) )
 			),
+			'returnUrl' => $returnUrl,
 			'displayControl' => array(
 				'shipping' => 'HIDE',
+				'billingAddress' => 'HIDE',
+				'orderSummary' => 'HIDE',
+				'paymentConfirmation' => 'HIDE',
+				'customerEmail' => 'HIDE'
 			)
 		);
 	}

@@ -62,6 +62,11 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	protected $service;
 
 	/**
+	 * @var string
+	 */
+	protected $hc_type;
+
+	/**
 	 * Mastercard_Gateway constructor.
 	 */
 	public function __construct() {
@@ -82,6 +87,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		$this->username    = $this->sandbox == 'no' ? $this->get_option( 'username' ) : $this->get_option( 'sandbox_username' );
 		$this->password    = $this->sandbox == 'no' ? $this->get_option( 'password' ) : $this->get_option( 'sandbox_password' );
 		$this->gateway_url = $this->get_option( 'gateway_url', self::API_EU );
+		$this->hc_type     = $this->get_option( 'hc_type', self::HC_TYPE_MODAL );
 
 		try {
 			$this->service = new Mastercard_GatewayService(
@@ -101,6 +107,81 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		) );
 
 		add_action( 'woocommerce_receipt_' . $this->id, array( $this, 'receipt_page' ) );
+		add_action( 'woocommerce_api_mastercard_gateway', array( $this, 'return_handler' ) );
+	}
+
+	/**
+	 * @return array|void
+	 * @throws \Http\Client\Exception
+	 */
+	public function return_handler() {
+		@ob_clean();
+		header( 'HTTP/1.1 200 OK' );
+
+		WC()->cart->empty_cart();
+
+		$order_id          = $_REQUEST['order_id'];
+		$result_indicator  = $_REQUEST['resultIndicator'];
+		$order             = new WC_Order( $order_id );
+		$success_indicator = $order->get_meta( 'mpgs_success_indicator' );
+
+		try {
+			if ( $success_indicator !== $result_indicator ) {
+				throw new Exception('Result indicator mismatch');
+			}
+
+			$mpgs_order = $this->service->retrieveOrder( $order_id );
+
+			$this->validate_order( $order, $mpgs_order );
+			$txn = $mpgs_order['transaction'][0];
+
+			$order->payment_complete( $txn['transaction']['id'] );
+			$order->add_order_note( sprintf( __( 'Mastercard payment approved (ID: %s, Auth Code: %s)', 'woocommerce' ), $txn['transaction']['id'], $txn['transaction']['authorizationCode'] ) );
+
+			wp_redirect( $this->get_return_url( $order ) );
+			exit();
+		} catch ( Exception $e ) {
+			// todo: produce error message
+			wp_redirect( wc_get_page_permalink( 'cart' ) );
+			exit();
+		}
+	}
+
+	/**
+	 * @param WC_Order $order
+	 * @param array $mpgs_order
+	 *
+	 * @return bool
+	 * @throws Exception
+	 */
+	protected function validate_order( $order, $mpgs_order ) {
+		if ( $order->get_currency() !== $mpgs_order['currency'] ) {
+			throw new Exception( 'Currency mismatch' );
+		}
+		if ( (float) $order->get_total() !== $mpgs_order['amount'] ) {
+			throw new Exception( 'Amount mismatch' );
+		}
+		if ($mpgs_order['result'] !== 'SUCCESS') {
+			throw new Exception( 'Payment not successful' );
+        }
+
+		return true;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function get_payment_return_url( $order_id ) {
+		return add_query_arg( 'wc-api', self::class, home_url( '/' ) ) . '&' . http_build_query( array(
+				'order_id' => $order_id
+			) );
+	}
+
+	/**
+	 * @return bool
+	 */
+	public function use_modal() {
+		return $this->hc_type === self::HC_TYPE_MODAL;
 	}
 
 	/**
@@ -138,15 +219,23 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		$result = null;
 		switch ( $route ) {
 			case ( (bool) preg_match( '~/mastercard/v1/session/\d+~', $route ) ):
-				$order = new WC_Order( $request->get_param( 'id' ) );
+				$order     = new WC_Order( $request->get_param( 'id' ) );
+				$returnUrl = $this->get_payment_return_url( $order->get_id() );
 
 				$order_builder = new Mastercard_CheckoutBuilder( $order );
 				$result        = $this->service->createCheckoutSession(
 					$order_builder->getOrder(),
-					$order_builder->getInteraction(),
+					$order_builder->getInteraction( $returnUrl ),
 					$order_builder->getCustomer(),
 					$order_builder->getBilling()
 				);
+
+				if ( $order->meta_exists( 'mpgs_success_indicator' ) ) {
+					$order->update_meta_data( 'mpgs_success_indicator', $result['successIndicator'] );
+				} else {
+					$order->add_meta_data( 'mpgs_success_indicator', $result['successIndicator'], true );
+				}
+				$order->save_meta_data();
 				break;
 
 			case '/mastercard/v1/webhook':
@@ -172,9 +261,6 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		$order = new WC_Order( $order_id );
 
 		$order->update_status( 'pending', __( 'Pending payment', 'woocommerce' ) );
-
-		global $woocommerce;
-		$woocommerce->cart->empty_cart();
 
 		return array(
 			'result'   => 'success',
@@ -267,28 +353,28 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				'default'     => 'yes'
 			),
 			'sandbox_username'   => array(
-				'title'       => __( 'Sandbox Public Key', 'woocommerce' ),
+				'title'       => __( 'Sandbox Merchant ID', 'woocommerce' ),
 				'type'        => 'text',
 				'description' => __( 'Get your API keys from your Mastercard account: Settings > API Keys.', 'woocommerce' ),
 				'default'     => '',
 				'desc_tip'    => true
 			),
 			'sandbox_password'   => array(
-				'title'       => __( 'Sandbox Private Key', 'woocommerce' ),
+				'title'       => __( 'Sandbox Password', 'woocommerce' ),
 				'type'        => 'text',
 				'description' => __( 'Get your API keys from your Mastercard account: Settings > API Keys.', 'woocommerce' ),
 				'default'     => '',
 				'desc_tip'    => true
 			),
 			'username'           => array(
-				'title'       => __( 'Public Key', 'woocommerce' ),
+				'title'       => __( 'Merchant ID', 'woocommerce' ),
 				'type'        => 'text',
 				'description' => __( 'Get your API keys from your Mastercard account: Settings > API Keys.', 'woocommerce' ),
 				'default'     => '',
 				'desc_tip'    => true
 			),
 			'password'           => array(
-				'title'       => __( 'Private Key', 'woocommerce' ),
+				'title'       => __( 'Password', 'woocommerce' ),
 				'type'        => 'text',
 				'description' => __( 'Get your API keys from your Mastercard account: Settings > API Keys.', 'woocommerce' ),
 				'default'     => '',
@@ -302,10 +388,10 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	 */
 	public function admin_options() {
 		?>
-		<h2><?php _e( 'Mastercard Payment Gateway Services', 'woocommerce' ); ?></h2>
-		<table class="form-table">
+        <h2><?php _e( 'Mastercard Payment Gateway Services', 'woocommerce' ); ?></h2>
+        <table class="form-table">
 			<?php $this->generate_settings_html(); ?>
-		</table> <?php
+        </table> <?php
 	}
 
 	/**

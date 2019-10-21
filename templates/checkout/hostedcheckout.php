@@ -7,8 +7,7 @@
 
 <script async src="<?php echo $gateway->get_hosted_checkout_js() ?>"
         data-error="errorCallback"
-        data-cancel="cancelCallback"
-        data-complete="completeCallback">
+        data-cancel="cancelCallback">
 </script>
 
 <script type="text/javascript">
@@ -18,10 +17,6 @@
 
     function cancelCallback() {
         window.location.href = '<?php echo $order->get_cancel_order_url() ?>';
-    }
-
-    function completeCallback(resultIndicator, sessionVersion) {
-        window.location.href = '<?php echo $order->get_checkout_payment_url() ?>';
     }
 
     (function ($) {
@@ -52,5 +47,8 @@
     })(jQuery);
 </script>
 
-<input type="button" value="Pay with Lightbox" onclick="Checkout.showLightbox();"/>
-<input type="button" value="Pay with Payment Page" onclick="Checkout.showPaymentPage();"/>
+<?php if ($gateway->use_modal()): ?>
+    <input type="button" value="Pay" onclick="Checkout.showLightbox();"/>
+<?php else: ?>
+    <input type="button" value="Pay" onclick="Checkout.showPaymentPage();"/>
+<?php endif; ?>
