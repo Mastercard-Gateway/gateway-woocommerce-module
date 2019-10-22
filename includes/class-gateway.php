@@ -22,6 +22,8 @@ require_once dirname( __FILE__ ) . '/class-gateway-service.php';
 
 class Mastercard_Gateway extends WC_Payment_Gateway {
 
+    const ID = 'mpgs_gateway';
+
 	const MPGS_API_VERSION = 'version/52';
 
 	const HOSTED_SESSION = 'hostedsession';
@@ -67,10 +69,16 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	protected $hc_type;
 
 	/**
+	 * @var string
+	 */
+	protected $capture;
+
+	/**
 	 * Mastercard_Gateway constructor.
+	 * @throws Exception
 	 */
 	public function __construct() {
-		$this->id         = 'mpgs_gateway';
+		$this->id         = self::ID;
 		$this->title      = __( 'Mastercard Payment Gateway Services', 'mastercard' );
 		$this->has_fields = true;
 
@@ -88,26 +96,86 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		$this->password    = $this->sandbox == 'no' ? $this->get_option( 'password' ) : $this->get_option( 'sandbox_password' );
 		$this->gateway_url = $this->get_option( 'gateway_url', self::API_EU );
 		$this->hc_type     = $this->get_option( 'hc_type', self::HC_TYPE_MODAL );
+		$this->capture     = $this->get_option( 'capture', 'yes' ) == 'yes' ? true : false;
+		$this->supports    = array(
+			'products',
+			'refunds',
+		);
 
-		try {
-			$this->service = new Mastercard_GatewayService(
-				$this->gateway_url,
-				self::MPGS_API_VERSION,
-				$this->username,
-				$this->password,
-				$this->get_webhook_url()
-			);
-		} catch ( Exception $e ) {
-			// todo: Add error message
-		}
+		$this->service = new Mastercard_GatewayService(
+			$this->gateway_url,
+			self::MPGS_API_VERSION,
+			$this->username,
+			$this->password,
+			$this->get_webhook_url()
+		);
 
 		add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array(
 			$this,
 			'process_admin_options'
 		) );
 
+		add_action( 'woocommerce_order_action_mpgs_capture_order', array( $this, 'process_capture') );
 		add_action( 'woocommerce_receipt_' . $this->id, array( $this, 'receipt_page' ) );
 		add_action( 'woocommerce_api_mastercard_gateway', array( $this, 'return_handler' ) );
+		add_action( 'admin_notices', array( $this, 'admin_notices' ) );
+	}
+
+	/**
+	 * @throws \Http\Client\Exception
+	 */
+	public function process_capture ( ) {
+	    $order = new WC_Order( $_REQUEST['post_ID'] );
+	    if ($order->get_payment_method() != $this->id) {
+		    throw new Exception('Wrong payment method');
+        }
+	    if ($order->get_status() != 'processing') {
+		    throw new Exception('Wrong order status, must be \'processing\'');
+        }
+	    if ( $order->get_meta('_mpgs_order_captured') ) {
+	        throw new Exception('Order already captured');
+        }
+
+	    $result = $this->service->captureTxn( $order->get_id(), time(), $order->get_total(), $order->get_currency() );
+
+	    $txn = $result['transaction'];
+		$order->add_order_note( sprintf( __( 'Mastercard payment CAPTURED (ID: %s, Auth Code: %s)', 'woocommerce' ), $txn['id'], $txn['authorizationCode'] ) );
+
+	    wp_redirect( wp_get_referer () );
+    }
+
+	/**
+	 * admin_notices
+	 */
+	public function admin_notices() {
+		if ( ! $this->enabled ) {
+			return;
+		}
+
+		if ( ! $this->username || ! $this->password ) {
+			echo '<div class="error"><p>' . __( 'API credentials are not valid. To activate the payment methods please your details to the forms below.' ) . '</p></div>';
+		}
+	}
+
+	/**
+	 * @param int $order_id
+	 * @param float|null $amount
+	 * @param string $reason
+	 *
+	 * @return bool
+	 * @throws \Http\Client\Exception
+	 */
+	public function process_refund( $order_id, $amount = null, $reason = '' ) {
+		$order  = new WC_Order( $order_id );
+		$result = $this->service->refund( $order_id, (string) time(), $amount, $order->get_currency() );
+		$order->add_order_note( sprintf(
+			__( 'Mastercard registered refund %s %s (ID: %s)', 'woocommerce' ),
+			$result['transaction']['amount'],
+			$result['transaction']['currency'],
+			$result['transaction']['id']
+		) );
+
+		return true;
 	}
 
 	/**
@@ -123,11 +191,11 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		$order_id          = $_REQUEST['order_id'];
 		$result_indicator  = $_REQUEST['resultIndicator'];
 		$order             = new WC_Order( $order_id );
-		$success_indicator = $order->get_meta( 'mpgs_success_indicator' );
+		$success_indicator = $order->get_meta( '_mpgs_success_indicator' );
 
 		try {
 			if ( $success_indicator !== $result_indicator ) {
-				throw new Exception('Result indicator mismatch');
+				throw new Exception( 'Result indicator mismatch' );
 			}
 
 			$mpgs_order = $this->service->retrieveOrder( $order_id );
@@ -135,8 +203,16 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			$this->validate_order( $order, $mpgs_order );
 			$txn = $mpgs_order['transaction'][0];
 
+			$captured = $mpgs_order['status'] === 'CAPTURED';
+			$order->add_meta_data('_mpgs_order_captured', $captured);
+
 			$order->payment_complete( $txn['transaction']['id'] );
-			$order->add_order_note( sprintf( __( 'Mastercard payment approved (ID: %s, Auth Code: %s)', 'woocommerce' ), $txn['transaction']['id'], $txn['transaction']['authorizationCode'] ) );
+
+			if ($captured) {
+				$order->add_order_note( sprintf( __( 'Mastercard payment CAPTURED (ID: %s, Auth Code: %s)', 'woocommerce' ), $txn['transaction']['id'], $txn['transaction']['authorizationCode'] ) );
+			} else {
+				$order->add_order_note( sprintf( __( 'Mastercard payment AUTHORIZED (ID: %s, Auth Code: %s)', 'woocommerce' ), $txn['transaction']['id'], $txn['transaction']['authorizationCode'] ) );
+            }
 
 			wp_redirect( $this->get_return_url( $order ) );
 			exit();
@@ -161,9 +237,9 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		if ( (float) $order->get_total() !== $mpgs_order['amount'] ) {
 			throw new Exception( 'Amount mismatch' );
 		}
-		if ($mpgs_order['result'] !== 'SUCCESS') {
+		if ( $mpgs_order['result'] !== 'SUCCESS' ) {
 			throw new Exception( 'Payment not successful' );
-        }
+		}
 
 		return true;
 	}
@@ -225,15 +301,15 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				$order_builder = new Mastercard_CheckoutBuilder( $order );
 				$result        = $this->service->createCheckoutSession(
 					$order_builder->getOrder(),
-					$order_builder->getInteraction( $returnUrl ),
+					$order_builder->getInteraction( $this->capture, $returnUrl ),
 					$order_builder->getCustomer(),
 					$order_builder->getBilling()
 				);
 
-				if ( $order->meta_exists( 'mpgs_success_indicator' ) ) {
-					$order->update_meta_data( 'mpgs_success_indicator', $result['successIndicator'] );
+				if ( $order->meta_exists( '_mpgs_success_indicator' ) ) {
+					$order->update_meta_data( '_mpgs_success_indicator', $result['successIndicator'] );
 				} else {
-					$order->add_meta_data( 'mpgs_success_indicator', $result['successIndicator'], true );
+					$order->add_meta_data( '_mpgs_success_indicator', $result['successIndicator'], true );
 				}
 				$order->save_meta_data();
 				break;
@@ -333,6 +409,14 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				'default'     => self::HOSTED_CHECKOUT,
 				'desc_tip'    => true,
 				'description' => __( 'This controls the description which the user sees during checkout.', 'woocommerce' ),
+			),
+			'capture'            => array(
+				'title'       => __( 'Capture', 'woocommerce' ),
+				'label'       => __( 'Capture charge immediately', 'woocommerce' ),
+				'type'        => 'checkbox',
+				'description' => __( 'Whether or not to immediately capture the charge. When unchecked, the charge issues an authorization and will need to be captured later.', 'woocommerce' ),
+				'default'     => 'yes',
+				'desc_tip'    => true,
 			),
 			'hc_type'            => array(
 				'title'       => __( 'HC type', 'woocommerce' ),

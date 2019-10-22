@@ -1,14 +1,30 @@
 <?php
 /**
+ * Copyright (c) 2019 Mastercard
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/**
  * @var Mastercard_Gateway $gateway
  * @var WC_Abstract_Order $order
  */
 ?>
 
 <?php if ( $gateway->use_modal() ): ?>
-    <input type="button" id="mpgs_pay_lightbox" value="Pay" onclick="Checkout.showLightbox();"/>
+    <input type="button" id="mpgs_pay" value="<?php echo __( 'Pay', 'woocommerce' ) ?>" onclick="Checkout.showLightbox();"/>
 <?php else: ?>
-    <input type="button" id="mpgs_pay_redirect" value="Pay" onclick="Checkout.showPaymentPage();"/>
+    <input type="button" id="mpgs_pay" value="<?php echo __( 'Pay', 'woocommerce' ) ?>" onclick="Checkout.showPaymentPage();"/>
 <?php endif; ?>
 
 <script async src="<?php echo $gateway->get_hosted_checkout_js() ?>"
@@ -17,7 +33,9 @@
 </script>
 <script type="text/javascript">
     function errorCallback(error) {
-        console.log(JSON.stringify(error));
+        let err = JSON.stringify(error);
+        console.error(err);
+        alert('Error: ' + JSON.stringify(error));
     }
 
     function cancelCallback() {
@@ -26,7 +44,7 @@
 
     (function ($) {
         function togglePay() {
-            $('#mpgs_pay_lightbox,#mpgs_pay_redirect').prop('disabled', function (i, v) {
+            $('#mpgs_pay').prop('disabled', function (i, v) {
                 return !v;
             });
         }
@@ -37,9 +55,6 @@
                 session: {
                     id: sessionData.session.id,
                     version: sessionData.session.version
-                },
-                order: {
-                    description: 'Customer Order'
                 }
             };
             Checkout.configure(config);

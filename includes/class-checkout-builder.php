@@ -97,12 +97,13 @@ class Mastercard_CheckoutBuilder {
 	}
 
 	/**
+	 * @param bool $capture
 	 * @param string|null $returnUrl
 	 * @return array
 	 */
-	public function getInteraction($returnUrl = null) {
+	public function getInteraction($capture = true, $returnUrl = null) {
 		return array(
-			'operation' => 'PURCHASE',
+			'operation' => $capture ? 'PURCHASE' : 'AUTHORIZE',
 			'merchant'  => array(
 				'name' => esc_html( get_bloginfo( 'name', 'display' ) )
 			),
