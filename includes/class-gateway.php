@@ -141,6 +141,9 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	    $txn = $result['transaction'];
 		$order->add_order_note( sprintf( __( 'Mastercard payment CAPTURED (ID: %s, Auth Code: %s)', 'woocommerce' ), $txn['id'], $txn['authorizationCode'] ) );
 
+		$order->update_meta_data('_mpgs_order_captured', true);
+		$order->save_meta_data();
+
 	    wp_redirect( wp_get_referer () );
     }
 
