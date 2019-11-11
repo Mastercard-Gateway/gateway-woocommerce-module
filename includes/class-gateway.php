@@ -22,7 +22,7 @@ require_once dirname( __FILE__ ) . '/class-gateway-service.php';
 
 class Mastercard_Gateway extends WC_Payment_Gateway {
 
-    const ID = 'mpgs_gateway';
+	const ID = 'mpgs_gateway';
 
 	const MPGS_API_VERSION = 'version/52';
 
@@ -69,9 +69,19 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	protected $hc_type;
 
 	/**
-	 * @var string
+	 * @var bool
 	 */
 	protected $capture;
+
+	/**
+	 * @var string
+	 */
+	protected $method;
+
+	/**
+	 * @var bool
+	 */
+	protected $threedsecure;
 
 	/**
 	 * Mastercard_Gateway constructor.
@@ -88,16 +98,18 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		$this->init_form_fields();
 		$this->init_settings();
 
-		$this->title       = $this->get_option( 'title' );
-		$this->description = $this->get_option( 'description' );
-		$this->enabled     = $this->get_option( 'enabled', false );
-		$this->sandbox     = $this->get_option( 'sandbox', false );
-		$this->username    = $this->sandbox == 'no' ? $this->get_option( 'username' ) : $this->get_option( 'sandbox_username' );
-		$this->password    = $this->sandbox == 'no' ? $this->get_option( 'password' ) : $this->get_option( 'sandbox_password' );
-		$this->gateway_url = $this->get_option( 'gateway_url', self::API_EU );
-		$this->hc_type     = $this->get_option( 'hc_type', self::HC_TYPE_MODAL );
-		$this->capture     = $this->get_option( 'capture', 'yes' ) == 'yes' ? true : false;
-		$this->supports    = array(
+		$this->title        = $this->get_option( 'title' );
+		$this->description  = $this->get_option( 'description' );
+		$this->enabled      = $this->get_option( 'enabled', false );
+		$this->sandbox      = $this->get_option( 'sandbox', false );
+		$this->username     = $this->sandbox == 'no' ? $this->get_option( 'username' ) : $this->get_option( 'sandbox_username' );
+		$this->password     = $this->sandbox == 'no' ? $this->get_option( 'password' ) : $this->get_option( 'sandbox_password' );
+		$this->gateway_url  = $this->get_option( 'gateway_url', self::API_EU );
+		$this->hc_type      = $this->get_option( 'hc_type', self::HC_TYPE_MODAL );
+		$this->capture      = $this->get_option( 'capture', 'yes' ) == 'yes' ? true : false;
+		$this->threedsecure = $this->get_option( 'threedsecure', 'yes' ) == 'yes' ? true : false;
+		$this->method       = $this->get_option( 'method', self::HOSTED_CHECKOUT );
+		$this->supports     = array(
 			'products',
 			'refunds',
 		);
@@ -115,7 +127,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			'process_admin_options'
 		) );
 
-		add_action( 'woocommerce_order_action_mpgs_capture_order', array( $this, 'process_capture') );
+		add_action( 'woocommerce_order_action_mpgs_capture_order', array( $this, 'process_capture' ) );
 		add_action( 'woocommerce_receipt_' . $this->id, array( $this, 'receipt_page' ) );
 		add_action( 'woocommerce_api_mastercard_gateway', array( $this, 'return_handler' ) );
 		add_action( 'admin_notices', array( $this, 'admin_notices' ) );
@@ -124,28 +136,28 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	/**
 	 * @throws \Http\Client\Exception
 	 */
-	public function process_capture ( ) {
-	    $order = new WC_Order( $_REQUEST['post_ID'] );
-	    if ($order->get_payment_method() != $this->id) {
-		    throw new Exception('Wrong payment method');
-        }
-	    if ($order->get_status() != 'processing') {
-		    throw new Exception('Wrong order status, must be \'processing\'');
-        }
-	    if ( $order->get_meta('_mpgs_order_captured') ) {
-	        throw new Exception('Order already captured');
-        }
+	public function process_capture() {
+		$order = new WC_Order( $_REQUEST['post_ID'] );
+		if ( $order->get_payment_method() != $this->id ) {
+			throw new Exception( 'Wrong payment method' );
+		}
+		if ( $order->get_status() != 'processing' ) {
+			throw new Exception( 'Wrong order status, must be \'processing\'' );
+		}
+		if ( $order->get_meta( '_mpgs_order_captured' ) ) {
+			throw new Exception( 'Order already captured' );
+		}
 
-	    $result = $this->service->captureTxn( $order->get_id(), time(), $order->get_total(), $order->get_currency() );
+		$result = $this->service->captureTxn( $order->get_id(), time(), $order->get_total(), $order->get_currency() );
 
-	    $txn = $result['transaction'];
+		$txn = $result['transaction'];
 		$order->add_order_note( sprintf( __( 'Mastercard payment CAPTURED (ID: %s, Auth Code: %s)', 'woocommerce' ), $txn['id'], $txn['authorizationCode'] ) );
 
-		$order->update_meta_data('_mpgs_order_captured', true);
+		$order->update_meta_data( '_mpgs_order_captured', true );
 		$order->save_meta_data();
 
-	    wp_redirect( wp_get_referer () );
-    }
+		wp_redirect( wp_get_referer() );
+	}
 
 	/**
 	 * admin_notices
@@ -189,8 +201,32 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		@ob_clean();
 		header( 'HTTP/1.1 200 OK' );
 
-		WC()->cart->empty_cart();
+		// todo: better status/messages handling
+		$status = isset( $_REQUEST['status'] ) ? $_REQUEST['status'] : null;
+		if ( $status == 'declined' ) {
+			echo "Payment was declined";
+			exit();
+		}
+		if ( $status == 'error' ) {
+		    echo $_REQUEST['status'] . ': ' . $_REQUEST['reason'];
+		    exit();
+        }
 
+		if ( $this->method === self::HOSTED_SESSION ) {
+			WC()->cart->empty_cart();
+			$this->process_hosted_session_payment();
+		}
+
+		if ( $this->method === self::HOSTED_CHECKOUT ) {
+			WC()->cart->empty_cart();
+			$this->process_hosted_checkout_payment();
+		}
+	}
+
+	/**
+	 * @throws \Http\Client\Exception
+	 */
+	protected function process_hosted_checkout_payment() {
 		$order_id          = $_REQUEST['order_id'];
 		$result_indicator  = $_REQUEST['resultIndicator'];
 		$order             = new WC_Order( $order_id );
@@ -202,29 +238,189 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			}
 
 			$mpgs_order = $this->service->retrieveOrder( $order_id );
+			if ($mpgs_order['result'] !== 'SUCCESS') {
+				throw new Exception('Payment not successful');
+			}
 
-			$this->validate_order( $order, $mpgs_order );
 			$txn = $mpgs_order['transaction'][0];
-
-			$captured = $mpgs_order['status'] === 'CAPTURED';
-			$order->add_meta_data('_mpgs_order_captured', $captured);
-
-			$order->payment_complete( $txn['transaction']['id'] );
-
-			if ($captured) {
-				$order->add_order_note( sprintf( __( 'Mastercard payment CAPTURED (ID: %s, Auth Code: %s)', 'woocommerce' ), $txn['transaction']['id'], $txn['transaction']['authorizationCode'] ) );
-			} else {
-				$order->add_order_note( sprintf( __( 'Mastercard payment AUTHORIZED (ID: %s, Auth Code: %s)', 'woocommerce' ), $txn['transaction']['id'], $txn['transaction']['authorizationCode'] ) );
-            }
+			$this->process_wc_order($order, $mpgs_order, $txn);
 
 			wp_redirect( $this->get_return_url( $order ) );
 			exit();
 		} catch ( Exception $e ) {
-			// todo: produce error message
-			wp_redirect( wc_get_page_permalink( 'cart' ) );
+			wp_redirect( $this->get_payment_return_url( $order_id, array(
+				'status' => 'error',
+				'reason' => $e->getMessage()
+			) ) );
 			exit();
 		}
 	}
+
+	/**
+	 * @throws \Http\Client\Exception
+	 */
+	protected function process_hosted_session_payment() {
+		$order_id           = $_REQUEST['order_id'];
+		$session_id         = $_REQUEST['session_id'];
+		$session_version    = $_REQUEST['session_version'];
+		$session            = array(
+			'id'      => $session_id,
+			'version' => $session_version
+		);
+		$order              = new WC_Order( $order_id );
+		$check_3ds          = isset( $_REQUEST['check_3ds_enrollment'] ) ? $_REQUEST['check_3ds_enrollment'] == '1' : false;
+		$process_acl_result = isset( $_REQUEST['process_acs_result'] ) ? $_REQUEST['process_acs_result'] == '1' : false;
+		$threeDSecureData   = null;
+
+		if ( $check_3ds ) {
+			$data    = array(
+				'authenticationRedirect' => array(
+					'pageGenerationMode' => 'CUSTOMIZED',
+					'responseUrl'        => $this->get_payment_return_url( $order_id, array(
+						'status' => '3ds_done'
+					) )
+				)
+			);
+			$session = array(
+				'id' => $session_id
+			);
+			$order   = array(
+				'amount'   => $order->get_total(),
+				'currency' => $order->get_currency()
+			);
+
+			$response = $this->service->check3dsEnrollment( $data, $order, $session );
+
+			if ( $response['response']['gatewayRecommendation'] !== 'PROCEED' ) {
+				wp_redirect( $this->get_payment_return_url( $order_id, array(
+					'status' => 'declined',
+					'reason' => 'gatewayRecommendation not proceed'
+				) ) );
+				exit();
+			}
+
+			if ( isset( $response['3DSecure']['authenticationRedirect'] ) ) {
+				$tds_auth = $response['3DSecure']['authenticationRedirect']['customized'];
+
+				set_query_var( 'authenticationRedirect', $tds_auth );
+				set_query_var( 'returnUrl', $this->get_payment_return_url( $order_id, array(
+					'3DSecureId'         => $response['3DSecureId'],
+					'process_acs_result' => '1',
+					'session_id'         => $session_id,
+					'session_version'    => $session_version,
+				) ) );
+
+				set_query_var( 'order', $order );
+				set_query_var( 'gateway', $this );
+
+				load_template( dirname( __FILE__ ) . '/../templates/3dsecure/form.php' );
+				exit();
+			} else {
+				$this->pay( $session, $order );
+			}
+		} else {
+			$this->pay( $session, $order );
+        }
+
+		if ( $process_acl_result ) {
+			$pa_res = $_POST['PaRes'];
+			$id     = $_REQUEST['3DSecureId'];
+
+			$response = $this->service->process3dsResult( $id, $pa_res );
+
+			if ( $response['response']['gatewayRecommendation'] !== 'PROCEED' ) {
+				wp_redirect( $this->get_payment_return_url( $order_id, array(
+					'status' => 'declined',
+					'reason' => 'gatewayRecommendation not proceed'
+				) ) );
+				exit();
+			}
+
+			$threeDSecureData = array(
+				'acsEci'              => $response['3DSecure']['acsEci'],
+				'authenticationToken' => $response['3DSecure']['authenticationToken'],
+				'paResStatus'         => $response['3DSecure']['paResStatus'],
+				'veResEnrolled'       => $response['3DSecure']['veResEnrolled'],
+				'xid'                 => $response['3DSecure']['xid'],
+			);
+
+			$this->pay( $session, $order, $threeDSecureData );
+		}
+
+		wp_redirect( $this->get_payment_return_url( $order->get_id(), array(
+			'status' => 'error',
+			'reason' => 'unexpected condition'
+		) ) );
+		exit();
+	}
+
+	/**
+	 * @param array $session
+	 * @param WC_Order $order
+	 * @param array|null $threeDSecure
+	 *
+	 * @throws \Http\Client\Exception
+	 */
+	protected function pay( $session, $order, $threeDSecure = null ) {
+		$order_builder = new Mastercard_CheckoutBuilder( $order );
+		if ( $this->capture ) {
+			$mpgs_txn = $this->service->pay(
+				$order->get_id(),
+				$order_builder->getOrder(),
+				$threeDSecure,
+				$session,
+				$order_builder->getCustomer(),
+				$order_builder->getBilling()
+			);
+		} else {
+			$mpgs_txn = $this->service->authorize(
+				$order->get_id(),
+				$order_builder->getOrder(),
+				$threeDSecure,
+				$session,
+				$order_builder->getCustomer(),
+				$order_builder->getBilling()
+			);
+		}
+
+		try {
+		    if ($mpgs_txn['result'] !== 'SUCCESS') {
+		        throw new Exception('Payment not successful');
+            }
+
+		    $this->process_wc_order($order, $mpgs_txn['order'], $mpgs_txn);
+			wp_redirect( $this->get_return_url( $order ) );
+			exit();
+		} catch ( Exception $e ) {
+			wp_redirect( $this->get_payment_return_url( $order->get_id(), array(
+				'status' => 'error',
+				'reason' => $e->getMessage()
+			) ) );
+			exit();
+		}
+	}
+
+	/**
+	 * @param WC_Order $order
+	 * @param array $order_data
+	 * @param array $txn_data
+	 *
+	 * @throws Exception
+	 */
+	protected function process_wc_order($order, $order_data, $txn_data) {
+		$this->validate_order( $order, $order_data );
+
+		$captured = $order_data['status'] === 'CAPTURED';
+		$order->add_meta_data( '_mpgs_order_captured', $captured );
+
+		$order->payment_complete( $txn_data['transaction']['id'] );
+
+		if ( $captured ) {
+			$order->add_order_note( sprintf( __( 'Mastercard payment CAPTURED (ID: %s, Auth Code: %s)', 'woocommerce' ), $txn_data['transaction']['id'], $txn_data['transaction']['authorizationCode'] ) );
+		} else {
+			$order->add_order_note( sprintf( __( 'Mastercard payment AUTHORIZED (ID: %s, Auth Code: %s)', 'woocommerce' ), $txn_data['transaction']['id'], $txn_data['transaction']['authorizationCode'] ) );
+		}
+    }
 
 	/**
 	 * @param WC_Order $order
@@ -240,20 +436,22 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		if ( (float) $order->get_total() !== $mpgs_order['amount'] ) {
 			throw new Exception( 'Amount mismatch' );
 		}
-		if ( $mpgs_order['result'] !== 'SUCCESS' ) {
-			throw new Exception( 'Payment not successful' );
-		}
 
 		return true;
 	}
 
 	/**
+	 * @param int $order_id
+	 * @param array $params
+	 *
 	 * @return string
 	 */
-	public function get_payment_return_url( $order_id ) {
-		return add_query_arg( 'wc-api', self::class, home_url( '/' ) ) . '&' . http_build_query( array(
-				'order_id' => $order_id
-			) );
+	public function get_payment_return_url( $order_id, $params = array() ) {
+		$params = array_merge( array(
+			'order_id' => $order_id
+		), $params );
+
+		return add_query_arg( 'wc-api', self::class, home_url( '/' ) ) . '&' . http_build_query( $params );
 	}
 
 	/**
@@ -264,10 +462,26 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	}
 
 	/**
+	 * @return bool
+	 */
+	public function use_3dsecure() {
+		return $this->threedsecure;
+	}
+
+	/**
 	 * @return string
 	 */
 	public function get_merchant_id() {
 		return $this->username;
+	}
+
+	/**
+	 * @param int $forOrderId
+	 *
+	 * @return string
+	 */
+	public function get_create_checkout_session_url( $forOrderId ) {
+		return rest_url( "mastercard/v1/checkoutSession/{$forOrderId}/" );
 	}
 
 	/**
@@ -297,13 +511,13 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	public function rest_route_processor( $route, $request ) {
 		$result = null;
 		switch ( $route ) {
-			case ( (bool) preg_match( '~/mastercard/v1/session/\d+~', $route ) ):
+			case ( (bool) preg_match( '~/mastercard/v1/checkoutSession/\d+~', $route ) ):
 				$order     = new WC_Order( $request->get_param( 'id' ) );
 				$returnUrl = $this->get_payment_return_url( $order->get_id() );
 
 				$order_builder = new Mastercard_CheckoutBuilder( $order );
 				$result        = $this->service->createCheckoutSession(
-					$order_builder->getOrder(),
+					$order_builder->getHostedCheckoutOrder(),
 					$order_builder->getInteraction( $this->capture, $returnUrl ),
 					$order_builder->getCustomer(),
 					$order_builder->getBilling()
@@ -332,6 +546,13 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	}
 
 	/**
+	 * @return string
+	 */
+	public function get_hosted_session_js() {
+		return sprintf( 'https://%s/form/%s/merchant/%s/session.js', $this->gateway_url, self::MPGS_API_VERSION, $this->get_merchant_id() );
+	}
+
+	/**
 	 * @param int $order_id
 	 *
 	 * @return array
@@ -356,7 +577,11 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		set_query_var( 'order', $order );
 		set_query_var( 'gateway', $this );
 
-		load_template( dirname( __FILE__ ) . '/../templates/checkout/hostedcheckout.php' );
+		if ( $this->method === self::HOSTED_SESSION ) {
+			load_template( dirname( __FILE__ ) . '/../templates/checkout/hostedsession.php' );
+		} else {
+			load_template( dirname( __FILE__ ) . '/../templates/checkout/hostedcheckout.php' );
+		}
 	}
 
 	/**
@@ -402,7 +627,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				'title' => __( 'Gateway URL', 'woocommerce' ),
 				'type'  => 'text'
 			),
-			'model'              => array(
+			'method'             => array(
 				'title'       => __( 'Payment Model', 'woocommerce' ),
 				'type'        => 'select',
 				'options'     => array(
@@ -412,6 +637,14 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				'default'     => self::HOSTED_CHECKOUT,
 				'desc_tip'    => true,
 				'description' => __( 'This controls the description which the user sees during checkout.', 'woocommerce' ),
+			),
+			'threedsecure'       => array(
+				'title'       => __( '3D-Secure', 'woocommerce' ),
+				'label'       => __( 'Use 3D-Secure', 'woocommerce' ),
+				'type'        => 'checkbox',
+				'description' => __( 'n/a', 'woocommerce' ),
+				'default'     => 'yes',
+				'desc_tip'    => true,
 			),
 			'capture'            => array(
 				'title'       => __( 'Capture', 'woocommerce' ),

@@ -67,7 +67,7 @@ class WC_Mastercard {
 		add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), array( $this, 'plugin_action_links' ) );
 
 		add_action( 'rest_api_init', function () {
-			register_rest_route( 'mastercard/v1', '/session/(?P<id>\d+)', array(
+			register_rest_route( 'mastercard/v1', '/checkoutSession/(?P<id>\d+)', array(
 				'methods'  => 'GET',
 				'callback' => [ $this, 'rest_route_forward' ],
 				'args'     => array(

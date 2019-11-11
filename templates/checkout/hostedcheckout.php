@@ -63,7 +63,7 @@
 
         let xhr = $.ajax({
             method: 'GET',
-            url: '<?php echo $gateway->get_create_session_url( $order->get_id() ) ?>',
+            url: '<?php echo $gateway->get_create_checkout_session_url( $order->get_id() ) ?>',
             dataType: 'json'
         });
 

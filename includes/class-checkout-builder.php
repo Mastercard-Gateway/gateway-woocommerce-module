@@ -87,12 +87,17 @@ class Mastercard_CheckoutBuilder {
 	/**
 	 * @return array
 	 */
+	public function getHostedCheckoutOrder() {
+		return array_merge(array(
+			'id'          => (string) $this->order->get_id(),
+			'description' => 'Ordered goods'
+		), $this->getOrder());
+	}
+
 	public function getOrder() {
 		return array(
 			'amount'      => (float) $this->order->get_total(),
 			'currency'    => get_woocommerce_currency(),
-			'id'          => (string) $this->order->get_id(),
-			'description' => 'Ordered goods'
 		);
 	}
 
