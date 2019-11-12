@@ -414,6 +414,7 @@ class Mastercard_GatewayService {
 	 * is valid and funds are available in the payers account.
 	 * https://mtf.gateway.mastercard.com/api/rest/version/50/merchant/{merchantId}/order/{orderid}/transaction/{transactionid}
 	 *
+	 * @param string $txnId
 	 * @param string $orderId
 	 * @param array $order
 	 * @param array $theeDSecure
@@ -425,6 +426,7 @@ class Mastercard_GatewayService {
 	 * @throws Exception
 	 */
 	public function authorize(
+		$txnId,
 		$orderId,
 		$order,
 		$theeDSecure = null,
@@ -432,7 +434,6 @@ class Mastercard_GatewayService {
 		$customer = array(),
 		$billing = array()
 	) {
-		$txnId = '1';
 		$uri   = $this->apiUrl . 'order/' . $orderId . '/transaction/' . $txnId;
 
 		$request = $this->messageFactory->createRequest( 'PUT', $uri, array(), json_encode( array(
@@ -467,6 +468,7 @@ class Mastercard_GatewayService {
 	 * for example when providing services or goods on the spot.
 	 * PUT https://mtf.gateway.mastercard.com/api/rest/version/50/merchant/{merchantId}/order/{orderid}/transaction/{transactionid}
 	 *
+	 * @param string $txnId
 	 * @param string $orderId
 	 * @param array $order
 	 * @param array $theeDSecure
@@ -478,6 +480,7 @@ class Mastercard_GatewayService {
 	 * @throws Exception
 	 */
 	public function pay(
+		$txnId,
 		$orderId,
 		$order = array(),
 		$theeDSecure = null,
@@ -485,7 +488,6 @@ class Mastercard_GatewayService {
 		$customer = array(),
 		$billing = array()
 	) {
-		$txnId = '1';
 		$uri   = $this->apiUrl . 'order/' . $orderId . '/transaction/' . $txnId;
 
 		$request = $this->messageFactory->createRequest( 'PUT', $uri, array(), json_encode( array(
