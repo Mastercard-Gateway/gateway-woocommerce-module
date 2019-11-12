@@ -127,10 +127,21 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			'process_admin_options'
 		) );
 
+		add_action( 'admin_enqueue_scripts', array( $this, 'admin_scripts' ) );
 		add_action( 'woocommerce_order_action_mpgs_capture_order', array( $this, 'process_capture' ) );
 		add_action( 'woocommerce_receipt_' . $this->id, array( $this, 'receipt_page' ) );
 		add_action( 'woocommerce_api_mastercard_gateway', array( $this, 'return_handler' ) );
 		add_action( 'admin_notices', array( $this, 'admin_notices' ) );
+	}
+
+	/**
+	 * @return void
+	 */
+	public function admin_scripts() {
+		if ( 'woocommerce_page_wc-settings' !== get_current_screen()->id ) {
+			return;
+		}
+		wp_enqueue_script( 'woocommerce_mastercard_admin', plugins_url( 'assets/js/mastercard-admin.js', __FILE__ ), array(), MPGS_MODULE_VERSION, true );
 	}
 
 	/**
@@ -636,13 +647,12 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				),
 				'default'     => self::HOSTED_CHECKOUT,
 				'desc_tip'    => true,
-				'description' => __( 'This controls the description which the user sees during checkout.', 'woocommerce' ),
 			),
 			'threedsecure'       => array(
 				'title'       => __( '3D-Secure', 'woocommerce' ),
 				'label'       => __( 'Use 3D-Secure', 'woocommerce' ),
 				'type'        => 'checkbox',
-				'description' => __( 'n/a', 'woocommerce' ),
+				'description' => __( 'Be sure to Enable 3D-Secure in your MasterCard account.', 'woocommerce' ),
 				'default'     => 'yes',
 				'desc_tip'    => true,
 			),
@@ -655,7 +665,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				'desc_tip'    => true,
 			),
 			'hc_type'            => array(
-				'title'       => __( 'HC type', 'woocommerce' ),
+				'title'       => __( 'Payment Behaviour', 'woocommerce' ),
 				'type'        => 'select',
 				'options'     => array(
 					self::HC_TYPE_REDIRECT => __( 'Redirect', 'woocommerce' ),
@@ -663,7 +673,11 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				),
 				'default'     => self::HC_TYPE_MODAL,
 				'desc_tip'    => true,
-				'description' => __( 'This controls the description which the user sees during checkout.', 'woocommerce' ),
+			),
+			'api_details'           => array(
+				'title'       => __( 'API credentials', 'woocommerce' ),
+				'type'        => 'title',
+				'description' => sprintf( __( 'Enter your Mastercard API credentials to process payments via Mastercard. Learn how to access your <a href="%s" target="_blank">Mastercard API Credentials</a>.', 'woocommerce' ), 'https://developer.mastercard.com/' ),
 			),
 			'sandbox'            => array(
 				'title'       => __( 'Sandbox', 'woocommerce' ),
