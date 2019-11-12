@@ -692,7 +692,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			),
 			'sandbox_password'   => array(
 				'title'       => __( 'Sandbox Password', 'woocommerce' ),
-				'type'        => 'text',
+				'type'        => 'password',
 				'description' => __( 'Get your API keys from your Mastercard account: Settings > API Keys.', 'woocommerce' ),
 				'default'     => '',
 				'desc_tip'    => true
@@ -706,7 +706,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			),
 			'password'           => array(
 				'title'       => __( 'Password', 'woocommerce' ),
-				'type'        => 'text',
+				'type'        => 'password',
 				'description' => __( 'Get your API keys from your Mastercard account: Settings > API Keys.', 'woocommerce' ),
 				'default'     => '',
 				'desc_tip'    => true
