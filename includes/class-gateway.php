@@ -238,17 +238,17 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			}
 
 			$mpgs_order = $this->service->retrieveOrder( $order_id );
-			if ($mpgs_order['result'] !== 'SUCCESS') {
-				throw new Exception('Payment was declined.');
+			if ( $mpgs_order['result'] !== 'SUCCESS' ) {
+				throw new Exception( 'Payment was declined.' );
 			}
 
 			$txn = $mpgs_order['transaction'][0];
-			$this->process_wc_order($order, $mpgs_order, $txn);
+			$this->process_wc_order( $order, $mpgs_order, $txn );
 
 			wp_redirect( $this->get_return_url( $order ) );
 			exit();
 		} catch ( Exception $e ) {
-			$order->update_status('failed', $e->getMessage());
+			$order->update_status( 'failed', $e->getMessage() );
 			wc_add_notice( $e->getMessage(), 'error' );
 			wp_redirect( wc_get_checkout_url() );
 			exit();
@@ -272,7 +272,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		$threeDSecureData   = null;
 
 		if ( $check_3ds ) {
-			$data    = array(
+			$data      = array(
 				'authenticationRedirect' => array(
 					'pageGenerationMode' => 'CUSTOMIZED',
 					'responseUrl'        => $this->get_payment_return_url( $order_id, array(
@@ -280,10 +280,10 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 					) )
 				)
 			);
-			$session = array(
+			$session   = array(
 				'id' => $session_id
 			);
-			$orderData   = array(
+			$orderData = array(
 				'amount'   => $order->get_total(),
 				'currency' => $order->get_currency()
 			);
@@ -291,8 +291,8 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			$response = $this->service->check3dsEnrollment( $data, $orderData, $session );
 
 			if ( $response['response']['gatewayRecommendation'] !== 'PROCEED' ) {
-				$order->update_status('failed', __('Payment was declined.', 'woocommerce'));
-				wc_add_notice( __('Payment was declined.', 'woocommerce'), 'error' );
+				$order->update_status( 'failed', __( 'Payment was declined.', 'woocommerce' ) );
+				wc_add_notice( __( 'Payment was declined.', 'woocommerce' ), 'error' );
 				wp_redirect( wc_get_checkout_url() );
 				exit();
 			}
@@ -316,7 +316,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			} else {
 				$this->pay( $session, $order );
 			}
-        }
+		}
 
 		if ( $process_acl_result ) {
 			$pa_res = $_POST['PaRes'];
@@ -325,8 +325,8 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			$response = $this->service->process3dsResult( $id, $pa_res );
 
 			if ( $response['response']['gatewayRecommendation'] !== 'PROCEED' ) {
-				$order->update_status('failed', __('Payment was declined.', 'woocommerce'));
-				wc_add_notice( __('Payment was declined.', 'woocommerce'), 'error' );
+				$order->update_status( 'failed', __( 'Payment was declined.', 'woocommerce' ) );
+				wc_add_notice( __( 'Payment was declined.', 'woocommerce' ), 'error' );
 				wp_redirect( wc_get_checkout_url() );
 				exit();
 			}
@@ -342,12 +342,12 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			$this->pay( $session, $order, $threeDSecureData );
 		}
 
-		if (!$check_3ds && !$process_acl_result && !$this->threedsecure) {
+		if ( ! $check_3ds && ! $process_acl_result && ! $this->threedsecure ) {
 			$this->pay( $session, $order );
-        }
+		}
 
-		$order->update_status('failed', __('Unexpected payment condition error.', 'woocommerce'));
-		wc_add_notice( __('Unexpected payment condition error.', 'woocommerce'), 'error' );
+		$order->update_status( 'failed', __( 'Unexpected payment condition error.', 'woocommerce' ) );
+		wc_add_notice( __( 'Unexpected payment condition error.', 'woocommerce' ), 'error' );
 		wp_redirect( wc_get_checkout_url() );
 		exit();
 	}
@@ -361,48 +361,48 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	 */
 	protected function pay( $session, $order, $threeDSecure = null ) {
 		try {
-			if (!$order->meta_exists('_txn_id')) {
-			    $txn_id = '1';
-				$order->add_meta_data('_txn_id', $txn_id);
+			if ( ! $order->meta_exists( '_txn_id' ) ) {
+				$txn_id = '1';
+				$order->add_meta_data( '_txn_id', $txn_id );
 			} else {
-			    $txn_id = (string) ((int) $order->get_meta('_txn_id') + 1);
-				$order->update_meta_data('_txn_id', $txn_id);
-            }
+				$txn_id = (string) ( (int) $order->get_meta( '_txn_id' ) + 1 );
+				$order->update_meta_data( '_txn_id', $txn_id );
+			}
 			$order->save_meta_data();
 
-            $order_builder = new Mastercard_CheckoutBuilder( $order );
-            if ( $this->capture ) {
-                $mpgs_txn = $this->service->pay(
-	                $txn_id,
-                    $order->get_id(),
-                    $order_builder->getOrder(),
-                    $threeDSecure,
-                    $session,
-                    $order_builder->getCustomer(),
-                    $order_builder->getBilling()
-                );
-            } else {
-                $mpgs_txn = $this->service->authorize(
-	                $txn_id,
-                    $order->get_id(),
-                    $order_builder->getOrder(),
-                    $threeDSecure,
-                    $session,
-                    $order_builder->getCustomer(),
-                    $order_builder->getBilling()
-                );
-            }
+			$order_builder = new Mastercard_CheckoutBuilder( $order );
+			if ( $this->capture ) {
+				$mpgs_txn = $this->service->pay(
+					$txn_id,
+					$order->get_id(),
+					$order_builder->getOrder(),
+					$threeDSecure,
+					$session,
+					$order_builder->getCustomer(),
+					$order_builder->getBilling()
+				);
+			} else {
+				$mpgs_txn = $this->service->authorize(
+					$txn_id,
+					$order->get_id(),
+					$order_builder->getOrder(),
+					$threeDSecure,
+					$session,
+					$order_builder->getCustomer(),
+					$order_builder->getBilling()
+				);
+			}
 
-		    if ($mpgs_txn['result'] !== 'SUCCESS') {
-		        throw new Exception('Payment was declined.');
-            }
+			if ( $mpgs_txn['result'] !== 'SUCCESS' ) {
+				throw new Exception( 'Payment was declined.' );
+			}
 
-		    $this->process_wc_order($order, $mpgs_txn['order'], $mpgs_txn);
+			$this->process_wc_order( $order, $mpgs_txn['order'], $mpgs_txn );
 
 			wp_redirect( $this->get_return_url( $order ) );
 			exit();
 		} catch ( Exception $e ) {
-			$order->update_status('failed', $e->getMessage());
+			$order->update_status( 'failed', $e->getMessage() );
 			wc_add_notice( $e->getMessage(), 'error' );
 			wp_redirect( wc_get_checkout_url() );
 			exit();
@@ -416,7 +416,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	 *
 	 * @throws Exception
 	 */
-	protected function process_wc_order($order, $order_data, $txn_data) {
+	protected function process_wc_order( $order, $order_data, $txn_data ) {
 		$this->validate_order( $order, $order_data );
 
 		$captured = $order_data['status'] === 'CAPTURED';
@@ -429,7 +429,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		} else {
 			$order->add_order_note( sprintf( __( 'Mastercard payment AUTHORIZED (ID: %s, Auth Code: %s)', 'woocommerce' ), $txn_data['transaction']['id'], $txn_data['transaction']['authorizationCode'] ) );
 		}
-    }
+	}
 
 	/**
 	 * @param WC_Order $order
@@ -636,14 +636,14 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				'type'  => 'text'
 			),
 			'method'             => array(
-				'title'       => __( 'Payment Model', 'woocommerce' ),
-				'type'        => 'select',
-				'options'     => array(
+				'title'    => __( 'Payment Model', 'woocommerce' ),
+				'type'     => 'select',
+				'options'  => array(
 					self::HOSTED_CHECKOUT => __( 'Hosted Checkout', 'woocommerce' ),
 					self::HOSTED_SESSION  => __( 'Hosted Session', 'woocommerce' ),
 				),
-				'default'     => self::HOSTED_CHECKOUT,
-				'desc_tip'    => true,
+				'default'  => self::HOSTED_CHECKOUT,
+				'desc_tip' => true,
 			),
 			'threedsecure'       => array(
 				'title'       => __( '3D-Secure', 'woocommerce' ),
@@ -662,16 +662,16 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				'desc_tip'    => true,
 			),
 			'hc_type'            => array(
-				'title'       => __( 'Payment Behaviour', 'woocommerce' ),
-				'type'        => 'select',
-				'options'     => array(
+				'title'    => __( 'Payment Behaviour', 'woocommerce' ),
+				'type'     => 'select',
+				'options'  => array(
 					self::HC_TYPE_REDIRECT => __( 'Redirect', 'woocommerce' ),
 					self::HC_TYPE_MODAL    => __( 'Modal', 'woocommerce' )
 				),
-				'default'     => self::HC_TYPE_MODAL,
-				'desc_tip'    => true,
+				'default'  => self::HC_TYPE_MODAL,
+				'desc_tip' => true,
 			),
-			'api_details'           => array(
+			'api_details'        => array(
 				'title'       => __( 'API credentials', 'woocommerce' ),
 				'type'        => 'title',
 				'description' => sprintf( __( 'Enter your Mastercard API credentials to process payments via Mastercard. Learn how to access your <a href="%s" target="_blank">Mastercard API Credentials</a>.', 'woocommerce' ), 'https://developer.mastercard.com/' ),
