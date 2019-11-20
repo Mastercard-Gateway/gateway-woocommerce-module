@@ -25,6 +25,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	const ID = 'mpgs_gateway';
 
 	const MPGS_API_VERSION = 'version/52';
+	const MPGS_API_VERSION_NUM = '52';
 
 	const HOSTED_SESSION = 'hostedsession';
 	const HOSTED_CHECKOUT = 'hostedcheckout';
@@ -37,6 +38,9 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	const API_NA = 'na-gateway.mastercard.com';
 	const API_UAT = 'secure.uat.tnspayments.com';
 	const API_CUSTOM = null;
+
+	const TXN_MODE_PURCHASE = 'capture';
+	const TXN_MODE_AUTH_CAPTURE = 'authorize';
 
 	/**
 	 * @var bool
@@ -88,12 +92,13 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	 * @throws Exception
 	 */
 	public function __construct() {
-		$this->id         = self::ID;
-		$this->title      = __( 'Mastercard Payment Gateway Services', 'mastercard' );
-		$this->has_fields = true;
+		$this->id           = self::ID;
+		$this->title        = __( 'Mastercard Payment Gateway Services', 'woocommerce' );
+		$this->method_title = __( 'Mastercard Payment Gateway Services', 'woocommerce' );
+		$this->has_fields   = true;
 
 		// @todo: change
-		$this->method_description = __( 'Mastercard Payment Gateway Services Description', 'mastercard' );
+		$this->method_description = __( 'TODO: Add description', 'woocommerce' );
 
 		$this->init_form_fields();
 		$this->init_settings();
@@ -101,12 +106,8 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		$this->title        = $this->get_option( 'title' );
 		$this->description  = $this->get_option( 'description' );
 		$this->enabled      = $this->get_option( 'enabled', false );
-		$this->sandbox      = $this->get_option( 'sandbox', false );
-		$this->username     = $this->sandbox == 'no' ? $this->get_option( 'username' ) : $this->get_option( 'sandbox_username' );
-		$this->password     = $this->sandbox == 'no' ? $this->get_option( 'password' ) : $this->get_option( 'sandbox_password' );
-		$this->gateway_url  = $this->get_option( 'gateway_url', self::API_EU );
 		$this->hc_type      = $this->get_option( 'hc_type', self::HC_TYPE_MODAL );
-		$this->capture      = $this->get_option( 'capture', 'yes' ) == 'yes' ? true : false;
+		$this->capture      = $this->get_option( 'txn_mode', self::TXN_MODE_PURCHASE ) == self::TXN_MODE_PURCHASE ? true : false;
 		$this->threedsecure = $this->get_option( 'threedsecure', 'yes' ) == 'yes' ? true : false;
 		$this->method       = $this->get_option( 'method', self::HOSTED_CHECKOUT );
 		$this->supports     = array(
@@ -114,13 +115,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			'refunds',
 		);
 
-		$this->service = new Mastercard_GatewayService(
-			$this->gateway_url,
-			self::MPGS_API_VERSION,
-			$this->username,
-			$this->password,
-			$this->get_webhook_url()
-		);
+		$this->service = $this->init_service();
 
 		add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array(
 			$this,
@@ -132,6 +127,44 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		add_action( 'woocommerce_receipt_' . $this->id, array( $this, 'receipt_page' ) );
 		add_action( 'woocommerce_api_mastercard_gateway', array( $this, 'return_handler' ) );
 		add_action( 'admin_notices', array( $this, 'admin_notices' ) );
+	}
+
+	/**
+	 * @return Mastercard_GatewayService
+	 * @throws Exception
+	 */
+	protected function init_service() {
+		$this->sandbox     = $this->get_option( 'sandbox', false );
+		$this->username    = $this->sandbox == 'no' ? $this->get_option( 'username' ) : $this->get_option( 'sandbox_username' );
+		$this->password    = $this->sandbox == 'no' ? $this->get_option( 'password' ) : $this->get_option( 'sandbox_password' );
+		$this->gateway_url = $this->get_option( 'gateway_url', self::API_EU );
+
+		$service = new Mastercard_GatewayService(
+			$this->gateway_url,
+			self::MPGS_API_VERSION,
+			$this->username,
+			$this->password,
+			$this->get_webhook_url()
+		);
+
+		return $service;
+	}
+
+	/**
+	 * @return bool
+	 */
+	public function process_admin_options() {
+		$saved = parent::process_admin_options();
+		try {
+			$service = $this->init_service();
+			$service->paymentOptionsInquiry();
+		} catch ( Exception $e ) {
+			$this->add_error(
+				sprintf( __( 'Error communicating with Mastercard API: "%s"', 'woocommerce' ), $e->getMessage() )
+			);
+		}
+
+		return $saved;
 	}
 
 	/**
@@ -181,6 +214,8 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		if ( ! $this->username || ! $this->password ) {
 			echo '<div class="error"><p>' . __( 'API credentials are not valid. To activate the payment methods please your details to the forms below.' ) . '</p></div>';
 		}
+
+		$this->display_errors();
 	}
 
 	/**
@@ -598,6 +633,11 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	 */
 	public function init_form_fields() {
 		$this->form_fields = array(
+			'heading'            => array(
+				'title'       => null,
+				'type'        => 'title',
+				'description' => sprintf( __( 'Plugin version: %s<br />API version: %s', 'woocommerce' ), MPGS_MODULE_VERSION, self::MPGS_API_VERSION_NUM ),
+			),
 			'enabled'            => array(
 				'title'       => __( 'Enable/Disable', 'woocommerce' ),
 				'label'       => __( 'Enable', 'woocommerce' ),
@@ -610,14 +650,14 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				'type'        => 'text',
 				'description' => __( 'This controls the title which the user sees during checkout.', 'woocommerce' ),
 				'default'     => __( 'Mastercard Payment Gateway Services', 'woocommerce' ),
-				'desc_tip'    => true
+//				'desc_tip'    => true
 			),
 			'description'        => array(
 				'title'       => __( 'Description', 'woocommerce' ),
 				'type'        => 'text',
 				'description' => __( 'This controls the description which the user sees during checkout.', 'woocommerce' ),
 				'default'     => 'Pay with your card via Mastercard.',
-				'desc_tip'    => true
+//				'desc_tip'    => true
 			),
 			'gateway_url'        => array(
 				'title'   => __( 'Gateway', 'woocommerce' ),
@@ -643,7 +683,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 					self::HOSTED_SESSION  => __( 'Hosted Session', 'woocommerce' ),
 				),
 				'default'  => self::HOSTED_CHECKOUT,
-				'desc_tip' => true,
+//				'desc_tip' => true,
 			),
 			'threedsecure'       => array(
 				'title'       => __( '3D-Secure', 'woocommerce' ),
@@ -651,15 +691,18 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				'type'        => 'checkbox',
 				'description' => __( 'Be sure to Enable 3D-Secure in your MasterCard account.', 'woocommerce' ),
 				'default'     => 'yes',
-				'desc_tip'    => true,
+//				'desc_tip'    => true,
 			),
-			'capture'            => array(
-				'title'       => __( 'Capture', 'woocommerce' ),
-				'label'       => __( 'Capture charge immediately', 'woocommerce' ),
-				'type'        => 'checkbox',
-				'description' => __( 'Whether or not to immediately capture the charge. When unchecked, the charge issues an authorization and will need to be captured later.', 'woocommerce' ),
-				'default'     => 'yes',
-				'desc_tip'    => true,
+			'txn_mode'           => array(
+				'title' => __( 'Transaction Mode', 'woocommerce' ),
+				'type'     => 'select',
+				'options'  => array(
+					self::TXN_MODE_PURCHASE    => __( 'Purchase', 'woocommerce' ),
+					self::TXN_MODE_AUTH_CAPTURE => __( 'Authorize + Capture', 'woocommerce' )
+				),
+				'default'  => self::TXN_MODE_PURCHASE,
+				'description' => __( 'In "Purchase" mode customer is charged immediately. In Authorize+Capture mode customer is only autorized, the capturing of fund is a manual process needed to be done in the admin panel by the merchant.', 'woocommerce' ),
+//				'desc_tip'    => true,
 			),
 			'hc_type'            => array(
 				'title'    => __( 'Payment Behaviour', 'woocommerce' ),
@@ -669,7 +712,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 					self::HC_TYPE_MODAL    => __( 'Modal', 'woocommerce' )
 				),
 				'default'  => self::HC_TYPE_MODAL,
-				'desc_tip' => true,
+//				'desc_tip' => true,
 			),
 			'api_details'        => array(
 				'title'       => __( 'API credentials', 'woocommerce' ),
@@ -688,41 +731,30 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				'type'        => 'text',
 				'description' => __( 'Get your API keys from your Mastercard account: Settings > API Keys.', 'woocommerce' ),
 				'default'     => '',
-				'desc_tip'    => true
+//				'desc_tip'    => true
 			),
 			'sandbox_password'   => array(
 				'title'       => __( 'Sandbox Password', 'woocommerce' ),
 				'type'        => 'password',
 				'description' => __( 'Get your API keys from your Mastercard account: Settings > API Keys.', 'woocommerce' ),
 				'default'     => '',
-				'desc_tip'    => true
+//				'desc_tip'    => true
 			),
 			'username'           => array(
 				'title'       => __( 'Merchant ID', 'woocommerce' ),
 				'type'        => 'text',
 				'description' => __( 'Get your API keys from your Mastercard account: Settings > API Keys.', 'woocommerce' ),
 				'default'     => '',
-				'desc_tip'    => true
+//				'desc_tip'    => true
 			),
 			'password'           => array(
 				'title'       => __( 'Password', 'woocommerce' ),
 				'type'        => 'password',
 				'description' => __( 'Get your API keys from your Mastercard account: Settings > API Keys.', 'woocommerce' ),
 				'default'     => '',
-				'desc_tip'    => true
+//				'desc_tip'    => true
 			),
 		);
-	}
-
-	/**
-	 * Render admin fields
-	 */
-	public function admin_options() {
-		?>
-        <h2><?php _e( 'Mastercard Payment Gateway Services', 'woocommerce' ); ?></h2>
-        <table class="form-table">
-			<?php $this->generate_settings_html(); ?>
-        </table> <?php
 	}
 
 	/**

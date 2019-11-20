@@ -29,25 +29,25 @@
     <p class="form-row form-row-wide">
         <label for="card-number"><?php echo __( 'Card Number', 'woocommerce' ) ?></label>
         <span class="woocommerce-input-wrapper">
-            <input type="text" class="input-text" id="card-number" title="<?php echo __( 'card number', 'woocommerce' ) ?>" aria-label="<?php echo __( 'enter your card number', 'woocommerce' ) ?>" value="" tabindex="1" readonly />
+            <input type="text" class="input-text" id="card-number" maxlength="19" title="<?php echo __( 'card number', 'woocommerce' ) ?>" aria-label="<?php echo __( 'enter your card number', 'woocommerce' ) ?>" value="" tabindex="1" readonly />
         </span>
     </p>
     <p class="form-row form-row-first">
         <label for="expiry-month"><?php echo __( 'Month', 'woocommerce' ) ?></label>
         <span class="woocommerce-input-wrapper">
-            <input type="text" class="input-text" id="expiry-month" title="<?php echo __( 'expiry month', 'woocommerce' ) ?>" aria-label="<?php echo __( 'two digit expiry month', 'woocommerce' ) ?>" value="" tabindex="2" readonly>
+            <input type="text" class="input-text" id="expiry-month" maxlength="2" title="<?php echo __( 'expiry month', 'woocommerce' ) ?>" aria-label="<?php echo __( 'two digit expiry month', 'woocommerce' ) ?>" value="" tabindex="2" readonly>
         </span>
     </p>
     <p class="form-row form-row-last">
         <label for="expiry-year"><?php echo __( 'Year', 'woocommerce' ) ?></label>
         <span class="woocommerce-input-wrapper">
-            <input type="text" class="input-text" id="expiry-year" title="<?php echo __( 'expiry year', 'woocommerce' ) ?>" aria-label="<?php echo __( 'two digit expiry year', 'woocommerce' ) ?>" value="" tabindex="3" readonly>
+            <input type="text" class="input-text" id="expiry-year" maxlength="2" title="<?php echo __( 'expiry year', 'woocommerce' ) ?>" aria-label="<?php echo __( 'two digit expiry year', 'woocommerce' ) ?>" value="" tabindex="3" readonly>
         </span>
     </p>
     <p class="form-row form-row-wide">
         <label for="security-code"><?php echo __( 'CVV', 'woocommerce' ) ?></label>
         <span class="woocommerce-input-wrapper">
-            <input type="text" id="security-code" class="input-field" title="<?php echo __( 'security code', 'woocommerce' ) ?>" aria-label="<?php echo __( 'three digit CCV security code', 'woocommerce' ) ?>" value="" tabindex="4" readonly>
+            <input type="text" id="security-code" class="input-field" maxlength="4" title="<?php echo __( 'security code', 'woocommerce' ) ?>" aria-label="<?php echo __( 'three digit CCV security code', 'woocommerce' ) ?>" value="" tabindex="4" readonly>
         </span>
     </p>
 
@@ -72,6 +72,7 @@
 
     function hsFieldMap() {
         return {
+            cardNumber: "#card-number",
             number: "#card-number",
             securityCode: "#security-code",
             expiryMonth: "#expiry-month",
@@ -165,7 +166,8 @@
             },
             interaction: {
                 displayControl: {
-                    invalidFieldCharacters: "REJECT"
+                    invalidFieldCharacters: 'REJECT',
+                    formatCard: 'EMBOSSED'
                 }
             }
         });
