@@ -689,7 +689,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				'title'       => __( '3D-Secure', 'woocommerce' ),
 				'label'       => __( 'Use 3D-Secure', 'woocommerce' ),
 				'type'        => 'checkbox',
-				'description' => __( 'Be sure to Enable 3D-Secure in your MasterCard account.', 'woocommerce' ),
+				'description' => __( 'Be sure to Enable 3D-Secure in your Mastercard account.', 'woocommerce' ),
 				'default'     => 'yes',
 //				'desc_tip'    => true,
 			),
@@ -701,7 +701,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 					self::TXN_MODE_AUTH_CAPTURE => __( 'Authorize + Capture', 'woocommerce' )
 				),
 				'default'  => self::TXN_MODE_PURCHASE,
-				'description' => __( 'In "Purchase" mode customer is charged immediately. In Authorize+Capture mode customer is only autorized, the capturing of fund is a manual process needed to be done in the admin panel by the merchant.', 'woocommerce' ),
+				'description' => __( 'In "Purchase" mode, the customer is charged immediately. In Authorize+Capture mode, the transaction is only authorized, and the capturing of funds is a manual process that you have to do with the Woocommenrce admin panel.', 'woocommerce' ),
 //				'desc_tip'    => true,
 			),
 			'hc_type'            => array(
