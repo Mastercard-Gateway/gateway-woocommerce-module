@@ -701,7 +701,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 					self::TXN_MODE_AUTH_CAPTURE => __( 'Authorize + Capture', 'woocommerce' )
 				),
 				'default'  => self::TXN_MODE_PURCHASE,
-				'description' => __( 'In "Purchase" mode, the customer is charged immediately. In Authorize+Capture mode, the transaction is only authorized, and the capturing of funds is a manual process that you have to do with the Woocommenrce admin panel.', 'woocommerce' ),
+				'description' => __( 'In "Purchase" mode, the customer is charged immediately. In Authorize+Capture mode, the transaction is only authorized, and the capturing of funds is a manual process that you have to do with the Woocommerce admin panel.', 'woocommerce' ),
 //				'desc_tip'    => true,
 			),
 			'hc_type'            => array(
