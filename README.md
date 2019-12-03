@@ -1,1 +1,1 @@
-# Mastercard Payment Gateway Services
+Mastercard Payment Gateway Services module for WooCommerce
