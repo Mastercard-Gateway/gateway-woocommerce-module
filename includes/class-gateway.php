@@ -96,9 +96,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		$this->title        = __( 'Mastercard Payment Gateway Services', 'woocommerce' );
 		$this->method_title = __( 'Mastercard Payment Gateway Services', 'woocommerce' );
 		$this->has_fields   = true;
-
-		// @todo: change
-		$this->method_description = __( 'TODO: Add description', 'woocommerce' );
+		$this->method_description = __( 'Accept payments on your WooCommerce store using Mastercard Payment Gateway Services.', 'woocommerce' );
 
 		$this->init_form_fields();
 		$this->init_settings();
@@ -717,7 +715,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			'api_details'        => array(
 				'title'       => __( 'API credentials', 'woocommerce' ),
 				'type'        => 'title',
-				'description' => sprintf( __( 'Enter your Mastercard API credentials to process payments via Mastercard. Learn how to access your <a href="%s" target="_blank">Mastercard API Credentials</a>.', 'woocommerce' ), 'https://developer.mastercard.com/' ),
+				'description' => sprintf( __( 'Enter your Mastercard API credentials to process payments via Mastercard. Learn how to access your <a href="%s" target="_blank">Mastercard API Credentials</a>.', 'woocommerce' ), 'https://test-gateway.mastercard.com/api/documentation/integrationGuidelines/supportedFeatures/pickSecurityModel/secureYourIntegration.html?locale=en_US' ),
 			),
 			'sandbox'            => array(
 				'title'       => __( 'Sandbox', 'woocommerce' ),

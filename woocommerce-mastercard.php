@@ -1,6 +1,11 @@
 <?php
 /**
  * Plugin Name: Mastercard Payment Gateway Services
+ * Description: Accept payments on your WooCommerce store using Mastercard Payment Gateway Services.
+ * Plugin URI: https://github.com/Mastercard-Gateway/gateway-woocommerce-module/
+ * Author: OnTap Networks Ltd.
+ * Author URI: https://www.ontapgroup.com/
+ * Version: 1.0.0
  */
 
 /**
@@ -146,6 +151,10 @@ class WC_Mastercard {
 	 */
 	public function plugin_action_links( $links ) {
 		// todo: Add 'Support'
+
+		//
+		array_unshift( $links, '<a href="https://www.ontapgroup.com/uk/helpdesk/ticket/">' . __( 'Support', 'mastercard' ) . '</a>' );
+		array_unshift( $links, '<a href="http://wiki.ontapgroup.com/display/MPGS">' . __( 'Docs', 'mastercard' ) . '</a>' );
 		array_unshift( $links, '<a href="' . admin_url( 'admin.php?page=wc-settings&tab=checkout&section=mpgs_gateway' ) . '">' . __( 'Settings', 'mastercard' ) . '</a>' );
 
 		return $links;
