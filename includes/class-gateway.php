@@ -346,9 +346,9 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 
 				load_template( dirname( __FILE__ ) . '/../templates/3dsecure/form.php' );
 				exit();
-			} else {
-				$this->pay( $session, $order );
 			}
+
+			$this->pay( $session, $order );
 		}
 
 		if ( $process_acl_result ) {

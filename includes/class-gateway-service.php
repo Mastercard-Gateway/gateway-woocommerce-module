@@ -266,7 +266,7 @@ class Mastercard_GatewayService {
 			throw new Mastercard_GatewayResponseException( 'Missing or invalid session result.' );
 		}
 
-		if ( ! isset( $data['session'] ) || ! isset( $data['session']['id'] ) ) {
+		if ( ! isset( $data['session']['id'] ) ) {
 			throw new Mastercard_GatewayResponseException( 'Missing session or ID.' );
 		}
 	}
@@ -349,7 +349,7 @@ class Mastercard_GatewayService {
 	 * @throws Exception
 	 */
 	public function check3dsEnrollment( $data, $order, $session ) {
-		$threeDSecureId = uniqid( sprintf( '3DS-' ) );
+		$threeDSecureId = uniqid( sprintf( '3DS-' ), true );
 		$uri            = $this->apiUrl . '3DSecureId/' . $threeDSecureId;
 
 		$request = $this->messageFactory->createRequest( 'PUT', $uri, array(), json_encode( array(
@@ -434,7 +434,7 @@ class Mastercard_GatewayService {
 		$customer = array(),
 		$billing = array()
 	) {
-		$uri   = $this->apiUrl . 'order/' . $orderId . '/transaction/' . $txnId;
+		$uri = $this->apiUrl . 'order/' . $orderId . '/transaction/' . $txnId;
 
 		$request = $this->messageFactory->createRequest( 'PUT', $uri, array(), json_encode( array(
 			'apiOperation'      => 'AUTHORIZE',
@@ -488,7 +488,7 @@ class Mastercard_GatewayService {
 		$customer = array(),
 		$billing = array()
 	) {
-		$uri   = $this->apiUrl . 'order/' . $orderId . '/transaction/' . $txnId;
+		$uri = $this->apiUrl . 'order/' . $orderId . '/transaction/' . $txnId;
 
 		$request = $this->messageFactory->createRequest( 'PUT', $uri, array(), json_encode( array(
 			'apiOperation'      => 'PAY',
@@ -552,7 +552,7 @@ class Mastercard_GatewayService {
 
 		// @todo: Find only the first one
 		foreach ( $response['transaction'] as $txn ) {
-			if ( $txn['transaction']['type'] === 'AUTHORIZATION' && $txn['result'] == 'SUCCESS' ) {
+			if ( $txn['transaction']['type'] === 'AUTHORIZATION' && $txn['result'] === 'SUCCESS' ) {
 				return $txn;
 			}
 		}
@@ -576,7 +576,7 @@ class Mastercard_GatewayService {
 
 		// @todo: Find only the first one
 		foreach ( $response['transaction'] as $txn ) {
-			if ( ( $txn['transaction']['type'] === 'CAPTURE' || $txn['transaction']['type'] === 'PAYMENT' ) && $txn['result'] == 'SUCCESS' ) {
+			if ( ( $txn['transaction']['type'] === 'CAPTURE' || $txn['transaction']['type'] === 'PAYMENT' ) && $txn['result'] === 'SUCCESS' ) {
 				return $txn;
 			}
 		}
