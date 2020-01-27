@@ -22,7 +22,8 @@ jQuery(function ($) {
                 username = $('#woocommerce_mpgs_gateway_username').parents('tr').eq(0),
                 password = $('#woocommerce_mpgs_gateway_password').parents('tr').eq(0),
                 threedsecure = $('#woocommerce_mpgs_gateway_threedsecure').parents('tr').eq(0),
-                gateway_url = $('#woocommerce_mpgs_gateway_custom_gateway_url').parents('tr').eq(0);
+                gateway_url = $('#woocommerce_mpgs_gateway_custom_gateway_url').parents('tr').eq(0),
+                hc_type = $('#woocommerce_mpgs_gateway_hc_type').parents('tr').eq(0);
 
             $('#woocommerce_mpgs_gateway_sandbox').on('change', function () {
                 if ($(this).is(':checked')) {
@@ -41,8 +42,10 @@ jQuery(function ($) {
             $('#woocommerce_mpgs_gateway_method').on('change', function () {
                 if ($(this).val() === 'hostedcheckout') {
                     threedsecure.hide();
+                    hc_type.show();
                 } else {
                     threedsecure.show();
+                    hc_type.hide();
                 }
             }).change();
 

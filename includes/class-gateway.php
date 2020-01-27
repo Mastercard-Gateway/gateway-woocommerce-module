@@ -92,10 +92,10 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	 * @throws Exception
 	 */
 	public function __construct() {
-		$this->id           = self::ID;
-		$this->title        = __( 'Mastercard Payment Gateway Services', 'woocommerce' );
-		$this->method_title = __( 'Mastercard Payment Gateway Services', 'woocommerce' );
-		$this->has_fields   = true;
+		$this->id                 = self::ID;
+		$this->title              = __( 'Mastercard Payment Gateway Services', 'woocommerce' );
+		$this->method_title       = __( 'Mastercard Payment Gateway Services', 'woocommerce' );
+		$this->has_fields         = true;
 		$this->method_description = __( 'Accept payments on your WooCommerce store using Mastercard Payment Gateway Services.', 'woocommerce' );
 
 		$this->init_form_fields();
@@ -648,14 +648,12 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				'type'        => 'text',
 				'description' => __( 'This controls the title which the user sees during checkout.', 'woocommerce' ),
 				'default'     => __( 'Mastercard Payment Gateway Services', 'woocommerce' ),
-//				'desc_tip'    => true
 			),
 			'description'        => array(
 				'title'       => __( 'Description', 'woocommerce' ),
 				'type'        => 'text',
 				'description' => __( 'This controls the description which the user sees during checkout.', 'woocommerce' ),
 				'default'     => 'Pay with your card via Mastercard.',
-//				'desc_tip'    => true
 			),
 			'gateway_url'        => array(
 				'title'   => __( 'Gateway', 'woocommerce' ),
@@ -673,15 +671,24 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				'title' => __( 'Gateway URL', 'woocommerce' ),
 				'type'  => 'text'
 			),
+			'txn_mode'           => array(
+				'title'       => __( 'Transaction Mode', 'woocommerce' ),
+				'type'        => 'select',
+				'options'     => array(
+					self::TXN_MODE_PURCHASE     => __( 'Purchase', 'woocommerce' ),
+					self::TXN_MODE_AUTH_CAPTURE => __( 'Authorize', 'woocommerce' )
+				),
+				'default'     => self::TXN_MODE_PURCHASE,
+				'description' => __( 'In "Purchase" mode, the customer is charged immediately. In Authorize mode, the transaction is only authorized, and the capturing of funds is a manual process that you have to do with the Woocommerce admin panel.', 'woocommerce' ),
+			),
 			'method'             => array(
-				'title'    => __( 'Payment Model', 'woocommerce' ),
-				'type'     => 'select',
-				'options'  => array(
+				'title'   => __( 'Payment Model', 'woocommerce' ),
+				'type'    => 'select',
+				'options' => array(
 					self::HOSTED_CHECKOUT => __( 'Hosted Checkout', 'woocommerce' ),
 					self::HOSTED_SESSION  => __( 'Hosted Session', 'woocommerce' ),
 				),
-				'default'  => self::HOSTED_CHECKOUT,
-//				'desc_tip' => true,
+				'default' => self::HOSTED_CHECKOUT,
 			),
 			'threedsecure'       => array(
 				'title'       => __( '3D-Secure', 'woocommerce' ),
@@ -689,28 +696,15 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				'type'        => 'checkbox',
 				'description' => __( 'Be sure to Enable 3D-Secure in your Mastercard account.', 'woocommerce' ),
 				'default'     => 'yes',
-//				'desc_tip'    => true,
-			),
-			'txn_mode'           => array(
-				'title' => __( 'Transaction Mode', 'woocommerce' ),
-				'type'     => 'select',
-				'options'  => array(
-					self::TXN_MODE_PURCHASE    => __( 'Purchase', 'woocommerce' ),
-					self::TXN_MODE_AUTH_CAPTURE => __( 'Authorize + Capture', 'woocommerce' )
-				),
-				'default'  => self::TXN_MODE_PURCHASE,
-				'description' => __( 'In "Purchase" mode, the customer is charged immediately. In Authorize+Capture mode, the transaction is only authorized, and the capturing of funds is a manual process that you have to do with the Woocommerce admin panel.', 'woocommerce' ),
-//				'desc_tip'    => true,
 			),
 			'hc_type'            => array(
-				'title'    => __( 'Payment Behaviour', 'woocommerce' ),
-				'type'     => 'select',
-				'options'  => array(
+				'title'   => __( 'Payment Behaviour', 'woocommerce' ),
+				'type'    => 'select',
+				'options' => array(
 					self::HC_TYPE_REDIRECT => __( 'Redirect', 'woocommerce' ),
 					self::HC_TYPE_MODAL    => __( 'Modal', 'woocommerce' )
 				),
-				'default'  => self::HC_TYPE_MODAL,
-//				'desc_tip' => true,
+				'default' => self::HC_TYPE_MODAL,
 			),
 			'api_details'        => array(
 				'title'       => __( 'API credentials', 'woocommerce' ),
@@ -729,28 +723,24 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				'type'        => 'text',
 				'description' => __( 'Get your API keys from your Mastercard account: Settings > API Keys.', 'woocommerce' ),
 				'default'     => '',
-//				'desc_tip'    => true
 			),
 			'sandbox_password'   => array(
 				'title'       => __( 'Sandbox Password', 'woocommerce' ),
 				'type'        => 'password',
 				'description' => __( 'Get your API keys from your Mastercard account: Settings > API Keys.', 'woocommerce' ),
 				'default'     => '',
-//				'desc_tip'    => true
 			),
 			'username'           => array(
 				'title'       => __( 'Merchant ID', 'woocommerce' ),
 				'type'        => 'text',
 				'description' => __( 'Get your API keys from your Mastercard account: Settings > API Keys.', 'woocommerce' ),
 				'default'     => '',
-//				'desc_tip'    => true
 			),
 			'password'           => array(
 				'title'       => __( 'Password', 'woocommerce' ),
 				'type'        => 'password',
 				'description' => __( 'Get your API keys from your Mastercard account: Settings > API Keys.', 'woocommerce' ),
 				'default'     => '',
-//				'desc_tip'    => true
 			),
 		);
 	}
