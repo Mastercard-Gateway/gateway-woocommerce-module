@@ -21,15 +21,15 @@
  * @var WC_Payment_Gateway_CC $cc_form
  */
 ?>
-
 <script src="<?php echo $gateway->get_hosted_session_js() ?>"></script>
 
 <style id="antiClickjack">body{display:none !important;}</style>
 
+<form class="mpgs_hostedsession wc-payment-form" action="<?php echo $gateway->get_payment_return_url( $order->get_id() ) ?>" method="post">
 
-<form class="mpgs_hostedsession" action="<?php echo $gateway->get_payment_return_url( $order->get_id() ) ?>" method="post">
-
-	<?php $cc_form->payment_fields(); ?>
+    <div class="payment_box">
+        <?php $cc_form->payment_fields(); ?>
+    </div>
 
     <input type="hidden" name="session_id" value="" />
     <input type="hidden" name="session_version" value="" />
@@ -38,7 +38,7 @@
     <div id="hostedsession_errors" style="color: red; display: none;" class="errors"></div>
 
     <p class="form-row form-row-wide">
-        <button type="button" id="mpgs_pay" disabled="disabled" onclick="PaymentSession.updateSessionFromForm('card');"><?php echo __( 'Pay', 'woocommerce' ) ?></button>
+        <button type="button" id="mpgs_pay" onclick="mpgsPayWithSelectedInstrument()"><?php echo __( 'Pay', 'woocommerce' ) ?></button>
     </p>
 </form>
 
@@ -83,73 +83,102 @@
         document.querySelector('form.mpgs_hostedsession').submit();
     }
 
-    (function ($) {
-        function togglePay() {
-            $('#mpgs_pay').prop('disabled', function (i, v) {
-                return !v;
+    function mpgsPayWithSelectedInstrument() {
+        var selected = document.querySelectorAll('[name=wc-mpgs_gateway-payment-token]:checked')[0];
+        if (selected.value === 'new') {
+            PaymentSession.updateSessionFromForm('card');
+        } else {
+            this.placeOrder({
+                session: {
+                    id: null,
+                    version: null
+                }
             });
         }
+    }
 
-        PaymentSession.configure({
-            fields: {
-                card: hsFieldMap()
-            },
-            frameEmbeddingMitigation: ["javascript"],
-            callbacks: {
-                initialized: function(response) {
-                    togglePay();
-                },
-                formSessionUpdate: function(response) {
-                    var fields = hsFieldMap();
-                    for (var field in fields) {
-                        var input = document.getElementById(fields[field].substr(1));
-                        input.style['border-color'] = 'inherit';
-                    }
+    (function ($) {
+        var paymentSessionLoaded = false;
 
-                    var errorsContainer = document.getElementById('hostedsession_errors');
-                    errorsContainer.innerText = '';
-                    errorsContainer.style.display = 'none';
-
-                    if (!response.status) {
-                        errorsContainer.innerText = hsLoadingFailedMsg + ' (invalid response)';
-                        errorsContainer.style.display = 'block';
-                        return;
-                    }
-
-                    if (response.status === "fields_in_error") {
-                        if (response.errors) {
-                            var errors = hsErrorsMap(),
-                                message = "";
-                            for (var field in response.errors) {
-                                if (!response.errors.hasOwnProperty(field)) {
-                                    continue;
-                                }
-
-                                var input = document.getElementById(fields[field].substr(1));
-                                input.style['border-color'] = 'red';
-
-                                message += errors[field] + "\n";
-                            }
-                            errorsContainer.innerText = message;
-                            errorsContainer.style.display = 'block';
-                        }
-                    }  else if (response.status === "ok") {
-                        if (is3DsEnabled()) {
-                            document.querySelector('form.mpgs_hostedsession > input[name=check_3ds_enrollment]').value = '1';
-                        }
-                        placeOrder(response);
-                    } else {
-                        errorsContainer.innerText = hsLoadingFailedMsg + ' (unexpected status: '+response.status+')';
-                        errorsContainer.style.display = 'block';
-                    }
-                }
-            },
-            interaction: {
-                displayControl: {
-                    invalidFieldCharacters: 'REJECT',
-                    formatCard: 'EMBOSSED'
-                }
+        $('[name=wc-mpgs_gateway-payment-token]').on('change', function () {
+            var errorsContainer = document.getElementById('hostedsession_errors');
+            errorsContainer.style.display = 'none';
+            
+            if ('new' === $('[name=wc-mpgs_gateway-payment-token]:checked').val()) {
+                initializePaymentSession();
             }
         });
+
+        // function togglePay() {
+        //     $('#mpgs_pay').prop('disabled', function (i, v) {
+        //         return !v;
+        //     });
+        // }
+
+        function initializePaymentSession() {
+            if (paymentSessionLoaded) {
+                return;
+            }
+            paymentSessionLoaded = true;
+
+            PaymentSession.configure({
+                fields: {
+                    card: hsFieldMap()
+                },
+                frameEmbeddingMitigation: ["javascript"],
+                callbacks: {
+                    formSessionUpdate: function (response) {
+                        var fields = hsFieldMap();
+                        for (var field in fields) {
+                            var input = document.getElementById(fields[field].substr(1));
+                            input.style['border-color'] = 'inherit';
+                        }
+
+                        var errorsContainer = document.getElementById('hostedsession_errors');
+                        errorsContainer.innerText = '';
+                        errorsContainer.style.display = 'none';
+
+                        if (!response.status) {
+                            errorsContainer.innerText = hsLoadingFailedMsg + ' (invalid response)';
+                            errorsContainer.style.display = 'block';
+                            return;
+                        }
+
+                        if (response.status === "fields_in_error") {
+                            if (response.errors) {
+                                var errors = hsErrorsMap(),
+                                    message = "";
+                                for (var field in response.errors) {
+                                    if (!response.errors.hasOwnProperty(field)) {
+                                        continue;
+                                    }
+
+                                    var input = document.getElementById(fields[field].substr(1));
+                                    input.style['border-color'] = 'red';
+
+                                    message += errors[field] + "\n";
+                                }
+                                errorsContainer.innerText = message;
+                                errorsContainer.style.display = 'block';
+                            }
+                        } else if (response.status === "ok") {
+                            if (is3DsEnabled()) {
+                                document.querySelector('form.mpgs_hostedsession > input[name=check_3ds_enrollment]').value = '1';
+                            }
+                            placeOrder(response);
+                        } else {
+                            errorsContainer.innerText = hsLoadingFailedMsg + ' (unexpected status: ' + response.status + ')';
+                            errorsContainer.style.display = 'block';
+                        }
+                    }
+                },
+                interaction: {
+                    displayControl: {
+                        invalidFieldCharacters: 'REJECT',
+                        formatCard: 'EMBOSSED'
+                    }
+                }
+            });
+        }
     })(jQuery);
 </script>
