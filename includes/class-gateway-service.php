@@ -315,14 +315,14 @@ class Mastercard_GatewayService {
 	 * without producing duplicates in the database.
 	 * POST https://mtf.gateway.mastercard.com/api/rest/version/50/merchant/{merchantId}/3DSecureId/{3DSecureId}
 	 *
-	 * @param string $threeDSecureId
+	 * @param string $tds_id
 	 * @param string $paRes
 	 *
 	 * @return mixed|ResponseInterface
 	 * @throws Exception
 	 */
-	public function process3dsResult( $threeDSecureId, $paRes ) {
-		$uri = $this->apiUrl . '3DSecureId/' . $threeDSecureId;
+	public function process3dsResult( $tds_id, $paRes ) {
+		$uri = $this->apiUrl . '3DSecureId/' . $tds_id;
 
 		$request = $this->messageFactory->createRequest( 'POST', $uri, array(), json_encode( array(
 			'apiOperation' => 'PROCESS_ACS_RESULT',
@@ -343,20 +343,22 @@ class Mastercard_GatewayService {
 	 *
 	 * @param array $data
 	 * @param array $order
-	 * @param array $session
+	 * @param array|null $session
+	 * @param array|null $source_of_funds
 	 *
 	 * @return mixed|ResponseInterface
 	 * @throws Exception
 	 */
-	public function check3dsEnrollment( $data, $order, $session ) {
-		$threeDSecureId = uniqid( sprintf( '3DS-' ), true );
-		$uri            = $this->apiUrl . '3DSecureId/' . $threeDSecureId;
+	public function check3dsEnrollment( $data, $order, $session = null, $source_of_funds = null ) {
+		$tds_id = uniqid( sprintf( '3DS-' ), true );
+		$uri    = $this->apiUrl . '3DSecureId/' . $tds_id;
 
 		$request = $this->messageFactory->createRequest( 'PUT', $uri, array(), json_encode( array(
-			'apiOperation' => 'CHECK_3DS_ENROLLMENT',
-			'3DSecure'     => $data,
-			'order'        => $order,
-			'session'      => $session,
+			'apiOperation'  => 'CHECK_3DS_ENROLLMENT',
+			'3DSecure'      => $data,
+			'order'         => $order,
+			'session'       => $session,
+			'sourceOfFunds' => $source_of_funds,
 		) ) );
 
 		$response = $this->client->sendRequest( $request );
@@ -417,7 +419,7 @@ class Mastercard_GatewayService {
 	 * @param string $txnId
 	 * @param string $orderId
 	 * @param array $order
-	 * @param array $theeDSecure
+	 * @param string|null $tds_id
 	 * @param array $session
 	 * @param array $customer
 	 * @param array $billing
@@ -429,7 +431,7 @@ class Mastercard_GatewayService {
 		$txnId,
 		$orderId,
 		$order,
-		$theeDSecure = null,
+		$tds_id = null,
 		$session = array(),
 		$customer = array(),
 		$billing = array()
@@ -438,7 +440,7 @@ class Mastercard_GatewayService {
 
 		$request = $this->messageFactory->createRequest( 'PUT', $uri, array(), json_encode( array(
 			'apiOperation'      => 'AUTHORIZE',
-			'3DSecure'          => $theeDSecure,
+			'3DSecureId'        => $tds_id,
 			'partnerSolutionId' => $this->getSolutionId(),
 			'order'             => array_merge( $order, array(
 				'notificationUrl' => $this->webhookUrl
@@ -471,7 +473,7 @@ class Mastercard_GatewayService {
 	 * @param string $txnId
 	 * @param string $orderId
 	 * @param array $order
-	 * @param array $theeDSecure
+	 * @param string|null $tds_id
 	 * @param array $session
 	 * @param array $customer
 	 * @param array $billing
@@ -483,7 +485,7 @@ class Mastercard_GatewayService {
 		$txnId,
 		$orderId,
 		$order = array(),
-		$theeDSecure = null,
+		$tds_id = null,
 		$session = array(),
 		$customer = array(),
 		$billing = array()
@@ -492,7 +494,7 @@ class Mastercard_GatewayService {
 
 		$request = $this->messageFactory->createRequest( 'PUT', $uri, array(), json_encode( array(
 			'apiOperation'      => 'PAY',
-			'3DSecure'          => $theeDSecure,
+			'3DSecureId'        => $tds_id,
 			'partnerSolutionId' => $this->getSolutionId(),
 			'order'             => array_merge( $order, array(
 				'notificationUrl' => $this->webhookUrl

@@ -85,29 +85,42 @@
 
     function mpgsPayWithSelectedInstrument() {
         var selected = document.querySelectorAll('[name=wc-mpgs_gateway-payment-token]:checked')[0];
-        if (selected.value === 'new') {
-            PaymentSession.updateSessionFromForm('card');
+        if (selected === undefined) {
+            // Options not displayed at all
+            PaymentSession.updateSessionFromForm('card', undefined, 'new');
+        } else if (selected.value === 'new') {
+            // New card options was selected
+            PaymentSession.updateSessionFromForm('card', undefined, 'new');
         } else {
-            this.placeOrder({
-                session: {
-                    id: null,
-                    version: null
-                }
-            });
+            // Token
+            PaymentSession.updateSessionFromForm('card', undefined, selected.value);
         }
     }
 
     (function ($) {
-        var paymentSessionLoaded = false;
-
-        $('[name=wc-mpgs_gateway-payment-token]').on('change', function () {
-            var errorsContainer = document.getElementById('hostedsession_errors');
-            errorsContainer.style.display = 'none';
-            
-            if ('new' === $('[name=wc-mpgs_gateway-payment-token]:checked').val()) {
-                initializePaymentSession();
-            }
+        $(':input.woocommerce-SavedPaymentMethods-tokenInput').on('change', function () {
+            $('.token-cvc').hide();
+            $('#token-cvc-' + $(this).val()).show();
         });
+
+        var paymentSessionLoaded = {};
+
+        var tokenChoices = $('[name=wc-mpgs_gateway-payment-token]');
+        if (tokenChoices.length > 1) {
+            tokenChoices.on('change', function () {
+                var errorsContainer = document.getElementById('hostedsession_errors');
+                errorsContainer.style.display = 'none';
+
+                var selectedPayment = $('[name=wc-mpgs_gateway-payment-token]:checked').val();
+                if ('new' === selectedPayment) {
+                    initializeNewPaymentSession();
+                } else {
+                    initializeTokenPaymentSession(selectedPayment);
+                }
+            });
+        } else {
+            initializeNewPaymentSession();
+        }
 
         // function togglePay() {
         //     $('#mpgs_pay').prop('disabled', function (i, v) {
@@ -115,13 +128,58 @@
         //     });
         // }
 
-        function initializePaymentSession() {
-            if (paymentSessionLoaded) {
+        function initializeTokenPaymentSession(id) {
+            if (paymentSessionLoaded[id] === true) {
                 return;
             }
-            paymentSessionLoaded = true;
 
-            PaymentSession.configure({
+            var config = {
+                fields: {
+                    card: {
+                        securityCode: '#mpgs_gateway-saved-card-cvc-' + id
+                    }
+                },
+                frameEmbeddingMitigation: ["javascript"],
+                callbacks: {
+                    formSessionUpdate: function (response) {
+                        var errorsContainer = document.getElementById('hostedsession_errors');
+                        errorsContainer.innerText = '';
+                        errorsContainer.style.display = 'none';
+
+                        if (!response.status) {
+                            errorsContainer.innerText = hsLoadingFailedMsg + ' (invalid response)';
+                            errorsContainer.style.display = 'block';
+                            return;
+                        }
+                        if (response.status === "ok") {
+                            if (is3DsEnabled()) {
+                                document.querySelector('form.mpgs_hostedsession > input[name=check_3ds_enrollment]').value = '1';
+                            }
+                            placeOrder(response);
+                        } else {
+                            errorsContainer.innerText = hsLoadingFailedMsg + ' (unexpected status: ' + response.status + ')';
+                            errorsContainer.style.display = 'block';
+                        }
+                    }
+                },
+                interaction: {
+                    displayControl: {
+                        invalidFieldCharacters: 'REJECT',
+                        formatCard: 'EMBOSSED'
+                    }
+                }
+            };
+
+            PaymentSession.configure(config, id);
+            paymentSessionLoaded[id] = true;
+        }
+
+        function initializeNewPaymentSession() {
+            if (paymentSessionLoaded['new'] === true) {
+                return;
+            }
+
+            var config = {
                 fields: {
                     card: hsFieldMap()
                 },
@@ -178,7 +236,10 @@
                         formatCard: 'EMBOSSED'
                     }
                 }
-            });
+            };
+
+            PaymentSession.configure(config, 'new');
+            paymentSessionLoaded['new'] = true;
         }
     })(jQuery);
 </script>

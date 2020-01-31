@@ -133,8 +133,6 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		add_action( 'woocommerce_receipt_' . $this->id, array( $this, 'receipt_page' ) );
 		add_action( 'woocommerce_api_mastercard_gateway', array( $this, 'return_handler' ) );
 		add_action( 'admin_notices', array( $this, 'admin_notices' ) );
-
-		//woocommerce_payment_gateway_supports
 	}
 
 	/**
@@ -147,15 +145,13 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		$this->password    = $this->sandbox == 'no' ? $this->get_option( 'password' ) : $this->get_option( 'sandbox_password' );
 		$this->gateway_url = $this->get_option( 'gateway_url', self::API_EU );
 
-		$service = new Mastercard_GatewayService(
+		return new Mastercard_GatewayService(
 			$this->gateway_url,
 			self::MPGS_API_VERSION,
 			$this->username,
 			$this->password,
 			$this->get_webhook_url()
 		);
-
-		return $service;
 	}
 
 	/**
@@ -299,12 +295,33 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	}
 
 	/**
+	 * @return array|null
+	 */
+	protected function get_source_of_funds_from_request()
+	{
+		$tokenKey = 'wc-' . $this->id . '-payment-token';
+		$tokenId = null;
+		if (isset($_REQUEST[$tokenKey])) {
+			$tokenId = $_REQUEST[$tokenKey];
+		}
+		$tokens = $this->get_tokens();
+		if ($tokenId && isset($tokens[$tokenId])) {
+			return array(
+				'token' => $tokens[$tokenId]->get_token()
+			);
+		}
+
+		return null;
+	}
+
+	/**
 	 * @throws \Http\Client\Exception
 	 */
 	protected function process_hosted_session_payment() {
 		$order_id           = $_REQUEST['order_id'];
 		$session_id         = $_REQUEST['session_id'];
 		$session_version    = $_REQUEST['session_version'];
+
 		$session            = array(
 			'id'      => $session_id,
 			'version' => $session_version
@@ -312,7 +329,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		$order              = new WC_Order( $order_id );
 		$check_3ds          = isset( $_REQUEST['check_3ds_enrollment'] ) ? $_REQUEST['check_3ds_enrollment'] == '1' : false;
 		$process_acl_result = isset( $_REQUEST['process_acs_result'] ) ? $_REQUEST['process_acs_result'] == '1' : false;
-		$threeDSecureData   = null;
+		$tds_id             = null;
 
 		if ( isset( $_REQUEST[ 'wc-' . $this->id . '-new-payment-method' ] ) ) {
 			$order->update_meta_data( '_save_card', $_REQUEST[ 'wc-' . $this->id . '-new-payment-method' ] === 'true' );
@@ -328,6 +345,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 					) )
 				)
 			);
+			$source_of_funds = $this->get_source_of_funds_from_request();
 			$session   = array(
 				'id' => $session_id
 			);
@@ -336,7 +354,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				'currency' => $order->get_currency()
 			);
 
-			$response = $this->service->check3dsEnrollment( $data, $orderData, $session );
+			$response = $this->service->check3dsEnrollment( $data, $orderData, $session, $source_of_funds );
 
 			if ( $response['response']['gatewayRecommendation'] !== 'PROCEED' ) {
 				$order->update_status( 'failed', __( 'Payment was declined.', 'woocommerce' ) );
@@ -368,9 +386,9 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 
 		if ( $process_acl_result ) {
 			$pa_res = $_POST['PaRes'];
-			$id     = $_REQUEST['3DSecureId'];
+			$tds_id = $_REQUEST['3DSecureId'];
 
-			$response = $this->service->process3dsResult( $id, $pa_res );
+			$response = $this->service->process3dsResult( $tds_id, $pa_res );
 
 			if ( $response['response']['gatewayRecommendation'] !== 'PROCEED' ) {
 				$order->update_status( 'failed', __( 'Payment was declined.', 'woocommerce' ) );
@@ -379,15 +397,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				exit();
 			}
 
-			$threeDSecureData = array(
-				'acsEci'              => $response['3DSecure']['acsEci'],
-				'authenticationToken' => $response['3DSecure']['authenticationToken'],
-				'paResStatus'         => $response['3DSecure']['paResStatus'],
-				'veResEnrolled'       => $response['3DSecure']['veResEnrolled'],
-				'xid'                 => $response['3DSecure']['xid'],
-			);
-
-			$this->pay( $session, $order, $threeDSecureData );
+			$this->pay( $session, $order, $tds_id );
 		}
 
 		if ( ! $check_3ds && ! $process_acl_result && ! $this->threedsecure ) {
@@ -403,11 +413,11 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	/**
 	 * @param array $session
 	 * @param WC_Order $order
-	 * @param array|null $threeDSecure
+	 * @param string|null $tds_id
 	 *
 	 * @throws \Http\Client\Exception
 	 */
-	protected function pay( $session, $order, $threeDSecure = null ) {
+	protected function pay( $session, $order, $tds_id = null ) {
 		try {
 			if ( ! $order->meta_exists( '_txn_id' ) ) {
 				$txn_id = '1';
@@ -424,7 +434,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 					$txn_id,
 					$order->get_id(),
 					$order_builder->getOrder(),
-					$threeDSecure,
+					$tds_id,
 					$session,
 					$order_builder->getCustomer(),
 					$order_builder->getBilling()
@@ -434,7 +444,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 					$txn_id,
 					$order->get_id(),
 					$order_builder->getOrder(),
-					$threeDSecure,
+					$tds_id,
 					$session,
 					$order_builder->getCustomer(),
 					$order_builder->getBilling()
@@ -480,7 +490,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 
 		$last4 = substr(
 			$response['sourceOfFunds']['provided']['card']['number'],
-			-4
+			- 4
 		);
 		$token->set_last4( $last4 );
 

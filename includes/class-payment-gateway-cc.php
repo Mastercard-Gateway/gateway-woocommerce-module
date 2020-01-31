@@ -19,8 +19,6 @@ class Mastercard_Payment_Gateway_CC extends WC_Payment_Gateway_CC
 {
 	/**
 	 * Outputs fields for entering credit card information.
-	 *
-	 * @since 2.6.0
 	 */
 	public function form() {
 		wp_enqueue_script( 'wc-credit-card-form' );
@@ -47,9 +45,7 @@ class Mastercard_Payment_Gateway_CC extends WC_Payment_Gateway_CC
 			</p>',
 		);
 
-		if ( ! $this->supports( 'credit_card_form_cvc_on_saved_method' ) ) {
-			$default_fields['card-cvc-field'] = $cvc_field;
-		}
+        $default_fields['card-cvc-field'] = $cvc_field;
 
 		$fields = wp_parse_args( $fields, apply_filters( 'woocommerce_credit_card_form_fields', $default_fields, $this->id ) );
 		?>
@@ -66,8 +62,14 @@ class Mastercard_Payment_Gateway_CC extends WC_Payment_Gateway_CC
 		</fieldset>
 		<?php
 
-		if ( $this->supports( 'credit_card_form_cvc_on_saved_method' ) ) {
-			echo '<fieldset>' . $cvc_field . '</fieldset>'; // phpcs:ignore WordPress.XSS.EscapeOutput.OutputNotEscaped
+		foreach ( $this->get_tokens() as $token ) {
+			echo '<fieldset class="token-cvc" id="token-cvc-'.$token->get_id().'">
+                <p class="form-row form-row-wide">
+			        <label for="' . esc_attr( $this->id ) . '-saved-card-cvc-'.$token->get_id().'">' . esc_html__( 'Card code', 'woocommerce' ) . '&nbsp;<span class="required">*</span></label>
+			        <input id="' . esc_attr( $this->id ) . '-saved-card-cvc-'.$token->get_id().'" class="input-text wc-credit-card-form-card-cvc" readonly="readonly" inputmode="numeric" autocomplete="off" autocorrect="no" autocapitalize="no" spellcheck="no" type="tel" maxlength="4" placeholder="' . esc_attr__( 'CVC', 'woocommerce' ) . '" style="width:100px" />
+                </p>
+            </fieldset>';
 		}
+
 	}
 }
