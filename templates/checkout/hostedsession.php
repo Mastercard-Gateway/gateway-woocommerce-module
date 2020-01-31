@@ -18,6 +18,7 @@
 /**
  * @var Mastercard_Gateway $gateway
  * @var WC_Abstract_Order $order
+ * @var WC_Payment_Gateway_CC $cc_form
  */
 ?>
 
@@ -25,31 +26,10 @@
 
 <style id="antiClickjack">body{display:none !important;}</style>
 
+
 <form class="mpgs_hostedsession" action="<?php echo $gateway->get_payment_return_url( $order->get_id() ) ?>" method="post">
-    <p class="form-row form-row-wide">
-        <label for="card-number"><?php echo __( 'Card Number', 'woocommerce' ) ?></label>
-        <span class="woocommerce-input-wrapper">
-            <input type="text" class="input-text" id="card-number" maxlength="19" title="<?php echo __( 'card number', 'woocommerce' ) ?>" aria-label="<?php echo __( 'enter your card number', 'woocommerce' ) ?>" value="" tabindex="1" readonly />
-        </span>
-    </p>
-    <p class="form-row form-row-first">
-        <label for="expiry-month"><?php echo __( 'Month', 'woocommerce' ) ?></label>
-        <span class="woocommerce-input-wrapper">
-            <input type="text" class="input-text" id="expiry-month" maxlength="2" title="<?php echo __( 'expiry month', 'woocommerce' ) ?>" aria-label="<?php echo __( 'two digit expiry month', 'woocommerce' ) ?>" value="" tabindex="2" readonly>
-        </span>
-    </p>
-    <p class="form-row form-row-last">
-        <label for="expiry-year"><?php echo __( 'Year', 'woocommerce' ) ?></label>
-        <span class="woocommerce-input-wrapper">
-            <input type="text" class="input-text" id="expiry-year" maxlength="2" title="<?php echo __( 'expiry year', 'woocommerce' ) ?>" aria-label="<?php echo __( 'two digit expiry year', 'woocommerce' ) ?>" value="" tabindex="3" readonly>
-        </span>
-    </p>
-    <p class="form-row form-row-wide">
-        <label for="security-code"><?php echo __( 'CVV', 'woocommerce' ) ?></label>
-        <span class="woocommerce-input-wrapper">
-            <input type="text" id="security-code" class="input-field" maxlength="4" title="<?php echo __( 'security code', 'woocommerce' ) ?>" aria-label="<?php echo __( 'three digit CCV security code', 'woocommerce' ) ?>" value="" tabindex="4" readonly>
-        </span>
-    </p>
+
+	<?php $cc_form->payment_fields(); ?>
 
     <input type="hidden" name="session_id" value="" />
     <input type="hidden" name="session_version" value="" />
@@ -72,11 +52,11 @@
 
     function hsFieldMap() {
         return {
-            cardNumber: "#card-number",
-            number: "#card-number",
-            securityCode: "#security-code",
-            expiryMonth: "#expiry-month",
-            expiryYear: "#expiry-year"
+            cardNumber: "#mpgs_gateway-card-number",
+            number: "#mpgs_gateway-card-number",
+            securityCode: "#mpgs_gateway-card-cvc",
+            expiryMonth: "#mpgs_gateway-card-expiry-month",
+            expiryYear: "#mpgs_gateway-card-expiry-year"
         };
     }
 

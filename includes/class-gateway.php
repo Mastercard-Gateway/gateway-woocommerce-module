@@ -19,6 +19,7 @@ define( 'MPGS_MODULE_VERSION', '1.0.0' );
 
 require_once dirname( __FILE__ ) . '/class-checkout-builder.php';
 require_once dirname( __FILE__ ) . '/class-gateway-service.php';
+require_once dirname( __FILE__ ) . '/class-payment-gateway-cc.php';
 
 class Mastercard_Gateway extends WC_Payment_Gateway {
 
@@ -88,6 +89,11 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	protected $threedsecure;
 
 	/**
+	 * @var bool
+	 */
+	protected $saved_cards;
+
+	/**
 	 * Mastercard_Gateway constructor.
 	 * @throws Exception
 	 */
@@ -108,9 +114,11 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		$this->capture      = $this->get_option( 'txn_mode', self::TXN_MODE_PURCHASE ) == self::TXN_MODE_PURCHASE ? true : false;
 		$this->threedsecure = $this->get_option( 'threedsecure', 'yes' ) == 'yes' ? true : false;
 		$this->method       = $this->get_option( 'method', self::HOSTED_CHECKOUT );
+		$this->saved_cards  = $this->get_option( 'saved_cards', 'yes' ) == 'yes' ? true : false;
 		$this->supports     = array(
 			'products',
 			'refunds',
+			'tokenization',
 		);
 
 		$this->service = $this->init_service();
@@ -125,6 +133,8 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		add_action( 'woocommerce_receipt_' . $this->id, array( $this, 'receipt_page' ) );
 		add_action( 'woocommerce_api_mastercard_gateway', array( $this, 'return_handler' ) );
 		add_action( 'admin_notices', array( $this, 'admin_notices' ) );
+
+		//woocommerce_payment_gateway_supports
 	}
 
 	/**
@@ -304,6 +314,11 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		$process_acl_result = isset( $_REQUEST['process_acs_result'] ) ? $_REQUEST['process_acs_result'] == '1' : false;
 		$threeDSecureData   = null;
 
+		if ( isset( $_REQUEST[ 'wc-' . $this->id . '-new-payment-method' ] ) ) {
+			$order->update_meta_data( '_save_card', $_REQUEST[ 'wc-' . $this->id . '-new-payment-method' ] === 'true' );
+			$order->save_meta_data();
+		}
+
 		if ( $check_3ds ) {
 			$data      = array(
 				'authenticationRedirect' => array(
@@ -427,10 +442,14 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			}
 
 			if ( $mpgs_txn['result'] !== 'SUCCESS' ) {
-				throw new Exception( 'Payment was declined.' );
+				throw new Exception( __( 'Payment was declined.', 'woocommerce' ) );
 			}
 
 			$this->process_wc_order( $order, $mpgs_txn['order'], $mpgs_txn );
+
+			if ( $this->saved_cards && $order->get_meta( '_save_card' ) ) {
+				$this->process_saved_cards( $session );
+			}
 
 			wp_redirect( $this->get_return_url( $order ) );
 			exit();
@@ -440,6 +459,39 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			wp_redirect( wc_get_checkout_url() );
 			exit();
 		}
+	}
+
+	/**
+	 * @param array $session
+	 *
+	 * @throws \Http\Client\Exception
+	 */
+	protected function process_saved_cards( $session ) {
+		$response = $this->service->createCardToken( $session['id'] );
+
+		if ( ! isset( $response['token'] ) || empty( $response['token'] ) ) {
+			throw new Exception( 'Token not present in reponse' );
+		}
+
+		$token = new WC_Payment_Token_CC();
+		$token->set_token( $response['token'] );
+		$token->set_gateway_id( $this->id );
+		$token->set_card_type( $response['sourceOfFunds']['provided']['card']['brand'] );
+
+		$last4 = substr(
+			$response['sourceOfFunds']['provided']['card']['number'],
+			-4
+		);
+		$token->set_last4( $last4 );
+
+		$m = [];
+		preg_match( '/^(\d{2})(\d{2})$/', $response['sourceOfFunds']['provided']['card']['expiry'], $m );
+
+		$token->set_expiry_month( $m[1] );
+		$token->set_expiry_year( '20' . $m[2] );
+		$token->set_user_id( get_current_user_id() );
+
+		$token->save();
 	}
 
 	/**
@@ -620,6 +672,22 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		set_query_var( 'gateway', $this );
 
 		if ( $this->method === self::HOSTED_SESSION ) {
+			$display_tokenization = $this->supports( 'tokenization' ) && is_checkout() && $this->saved_cards;
+			set_query_var( 'display_tokenization', $display_tokenization );
+
+			$cc_form     = new Mastercard_Payment_Gateway_CC();
+			$cc_form->id = $this->id;
+
+			$support = $this->supports;
+			if ( $this->saved_cards == false ) {
+				foreach ( array_keys( $support, 'tokenization', true ) as $key ) {
+					unset( $support[ $key ] );
+				}
+			}
+			$cc_form->supports = $support;
+
+			set_query_var( 'cc_form', $cc_form );
+
 			load_template( dirname( __FILE__ ) . '/../templates/checkout/hostedsession.php' );
 		} else {
 			load_template( dirname( __FILE__ ) . '/../templates/checkout/hostedcheckout.php' );
@@ -705,6 +773,13 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 					self::HC_TYPE_MODAL    => __( 'Modal', 'woocommerce' )
 				),
 				'default' => self::HC_TYPE_MODAL,
+			),
+			'saved_cards'        => array(
+				'title'       => __( 'Saved Cards', 'woocommerce' ),
+				'label'       => __( 'Enable Payment via Saved Cards', 'woocommerce' ),
+				'type'        => 'checkbox',
+				'description' => __( 'If enabled, users will be able to pay with a saved card during checkout. Card details are saved on Mastercard servers, not on your store.', 'woocommerce' ),
+				'default'     => 'yes',
 			),
 			'api_details'        => array(
 				'title'       => __( 'API credentials', 'woocommerce' ),

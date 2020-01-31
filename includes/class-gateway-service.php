@@ -15,26 +15,26 @@
  * limitations under the License.
  */
 
-use Http\Discovery\HttpClientDiscovery;
-use Http\Message\MessageFactory\GuzzleMessageFactory;
-use Http\Client\Common\Plugin\AuthenticationPlugin;
-use Http\Message\Authentication\BasicAuth;
-use Http\Client\Common\PluginClient;
-use Http\Message\RequestMatcher\RequestMatcher;
+use Http\Client\Common\Exception\ClientErrorException;
+use Http\Client\Common\Exception\ServerErrorException;
 use Http\Client\Common\HttpClientRouter;
-use Monolog\Logger;
-use Monolog\Handler\StreamHandler;
+use Http\Client\Common\Plugin;
+use Http\Client\Common\Plugin\AuthenticationPlugin;
 use Http\Client\Common\Plugin\ContentLengthPlugin;
 use Http\Client\Common\Plugin\HeaderSetPlugin;
-use Http\Client\Common\Plugin;
+use Http\Client\Common\PluginClient;
+use Http\Client\Exception;
+use Http\Discovery\HttpClientDiscovery;
+use Http\Message\Authentication\BasicAuth;
+use Http\Message\Formatter;
+use Http\Message\Formatter\SimpleFormatter;
+use Http\Message\MessageFactory\GuzzleMessageFactory;
+use Http\Message\RequestMatcher\RequestMatcher;
+use Monolog\Handler\StreamHandler;
+use Monolog\Logger;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
-use Http\Message\Formatter;
-use Http\Message\Formatter\SimpleFormatter;
-use Http\Client\Exception;
-use Http\Client\Common\Exception\ClientErrorException;
-use Http\Client\Common\Exception\ServerErrorException;
 
 class Mastercard_ApiErrorPlugin implements Plugin {
 	/**
@@ -730,6 +730,34 @@ class Mastercard_GatewayService {
 		$request  = $this->messageFactory->createRequest( 'GET', $uri );
 		$response = $this->client->sendRequest( $request );
 
+		$response = json_decode( $response->getBody(), true );
+
+		return $response;
+	}
+
+	/**
+	 * Request for the gateway to store payment instrument (e.g. credit or debit cards, gift cards,
+	 * ACH bank account details) against a token, where the system generates the token id.
+	 * https://eu-gateway.mastercard.com/api/rest/version/54/merchant/{merchantId}/token
+	 *
+	 * @param string $session_id
+	 *
+	 * @return mixed|ResponseInterface
+	 * @throws Exception
+	 */
+	public function createCardToken( $session_id ) {
+		$uri = $this->apiUrl . 'token';
+
+		$request = $this->messageFactory->createRequest( 'POST', $uri, array(), json_encode( array(
+			'session'       => array(
+				'id' => $session_id
+			),
+			'sourceOfFunds' => array(
+				'type' => 'CARD'
+			)
+		) ) );
+
+		$response = $this->client->sendRequest( $request );
 		$response = json_decode( $response->getBody(), true );
 
 		return $response;
