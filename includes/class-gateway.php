@@ -38,7 +38,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	const API_AS = 'ap-gateway.mastercard.com';
 	const API_NA = 'na-gateway.mastercard.com';
 	const API_UAT = 'secure.uat.tnspayments.com';
-	const API_CUSTOM = null;
+	const API_CUSTOM = 'custom';
 
 	const TXN_MODE_PURCHASE = 'capture';
 	const TXN_MODE_AUTH_CAPTURE = 'authorize';
@@ -143,15 +143,25 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		$this->sandbox     = $this->get_option( 'sandbox', false );
 		$this->username    = $this->sandbox == 'no' ? $this->get_option( 'username' ) : $this->get_option( 'sandbox_username' );
 		$this->password    = $this->sandbox == 'no' ? $this->get_option( 'password' ) : $this->get_option( 'sandbox_password' );
-		$this->gateway_url = $this->get_option( 'gateway_url', self::API_EU );
 
 		return new Mastercard_GatewayService(
-			$this->gateway_url,
+			$this->get_gateway_url(),
 			self::MPGS_API_VERSION,
 			$this->username,
 			$this->password,
 			$this->get_webhook_url()
 		);
+	}
+
+	/**
+	 * @return string
+	 */
+	protected function get_gateway_url() {
+		$gateway_url = $this->get_option( 'gateway_url', self::API_EU );
+		if ($gateway_url === self::API_CUSTOM) {
+			$gateway_url = $this->get_option( 'custom_gateway_url' );
+		}
+		return $gateway_url;
 	}
 
 	/**
@@ -371,16 +381,16 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			}
 
 			if ( isset( $response['3DSecure']['authenticationRedirect'] ) ) {
-				$tds_auth = $response['3DSecure']['authenticationRedirect']['customized'];
+				$tds_auth  = $response['3DSecure']['authenticationRedirect']['customized'];
 				$token_key = $this->get_token_key();
 
 				set_query_var( 'authenticationRedirect', $tds_auth );
 				set_query_var( 'returnUrl', $this->get_payment_return_url( $order_id, array(
-					'3DSecureId'           => $response['3DSecureId'],
-					'process_acs_result'   => '1',
-					'session_id'           => $session_id,
-					'session_version'      => $session_version,
-					$token_key => isset( $_REQUEST[ $token_key ] ) ? $_REQUEST[ $token_key ] : null
+					'3DSecureId'         => $response['3DSecureId'],
+					'process_acs_result' => '1',
+					'session_id'         => $session_id,
+					'session_version'    => $session_version,
+					$token_key           => isset( $_REQUEST[ $token_key ] ) ? $_REQUEST[ $token_key ] : null
 				) ) );
 
 				set_query_var( 'order', $order );
@@ -657,14 +667,14 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	 * @return string
 	 */
 	public function get_hosted_checkout_js() {
-		return sprintf( 'https://%s/checkout/%s/checkout.js', $this->gateway_url, self::MPGS_API_VERSION );
+		return sprintf( 'https://%s/checkout/%s/checkout.js', $this->get_gateway_url(), self::MPGS_API_VERSION );
 	}
 
 	/**
 	 * @return string
 	 */
 	public function get_hosted_session_js() {
-		return sprintf( 'https://%s/form/%s/merchant/%s/session.js', $this->gateway_url, self::MPGS_API_VERSION, $this->get_merchant_id() );
+		return sprintf( 'https://%s/form/%s/merchant/%s/session.js', $this->get_gateway_url(), self::MPGS_API_VERSION, $this->get_merchant_id() );
 	}
 
 	/**
@@ -757,8 +767,9 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				'default' => self::API_EU,
 			),
 			'custom_gateway_url' => array(
-				'title' => __( 'Gateway URL', 'woocommerce' ),
-				'type'  => 'text'
+				'title' => __( 'Custom Gateway Host', 'woocommerce' ),
+				'type'  => 'text',
+				'description' => __('Only hostname without http prefix. For example mtf.gateway.mastercard.com')
 			),
 			'txn_mode'           => array(
 				'title'       => __( 'Transaction Mode', 'woocommerce' ),

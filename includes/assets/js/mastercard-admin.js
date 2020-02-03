@@ -50,7 +50,7 @@ jQuery(function ($) {
             }).change();
 
             $('#woocommerce_mpgs_gateway_gateway_url').on('change', function () {
-                if (!$(this).val()) {
+                if ($(this).val() === 'custom') {
                     gateway_url.show();
                 } else {
                     gateway_url.hide();
