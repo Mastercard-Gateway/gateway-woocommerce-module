@@ -295,32 +295,38 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	}
 
 	/**
-	 * @return array|null
+	 * @return array
 	 */
-	protected function get_source_of_funds_from_request()
-	{
-		$tokenKey = 'wc-' . $this->id . '-payment-token';
-		$tokenId = null;
-		if (isset($_REQUEST[$tokenKey])) {
-			$tokenId = $_REQUEST[$tokenKey];
+	protected function get_token_from_request() {
+		$token_key = $this->get_token_key();
+		$tokenId   = null;
+		if ( isset( $_REQUEST[ $token_key ] ) ) {
+			$token_id = $_REQUEST[ $token_key ];
 		}
 		$tokens = $this->get_tokens();
-		if ($tokenId && isset($tokens[$tokenId])) {
+		if ( $token_id && isset( $tokens[ $token_id ] ) ) {
 			return array(
-				'token' => $tokens[$tokenId]->get_token()
+				'token' => $tokens[ $token_id ]->get_token()
 			);
 		}
 
-		return null;
+		return array();
+	}
+
+	/**
+	 * @return string
+	 */
+	protected function get_token_key() {
+		return 'wc-' . $this->id . '-payment-token';
 	}
 
 	/**
 	 * @throws \Http\Client\Exception
 	 */
 	protected function process_hosted_session_payment() {
-		$order_id           = $_REQUEST['order_id'];
-		$session_id         = $_REQUEST['session_id'];
-		$session_version    = $_REQUEST['session_version'];
+		$order_id        = $_REQUEST['order_id'];
+		$session_id      = $_REQUEST['session_id'];
+		$session_version = $_REQUEST['session_version'];
 
 		$session            = array(
 			'id'      => $session_id,
@@ -345,7 +351,6 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 					) )
 				)
 			);
-			$source_of_funds = $this->get_source_of_funds_from_request();
 			$session   = array(
 				'id' => $session_id
 			);
@@ -353,6 +358,8 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				'amount'   => $order->get_total(),
 				'currency' => $order->get_currency()
 			);
+
+			$source_of_funds = $this->get_token_from_request();
 
 			$response = $this->service->check3dsEnrollment( $data, $orderData, $session, $source_of_funds );
 
@@ -365,13 +372,15 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 
 			if ( isset( $response['3DSecure']['authenticationRedirect'] ) ) {
 				$tds_auth = $response['3DSecure']['authenticationRedirect']['customized'];
+				$token_key = $this->get_token_key();
 
 				set_query_var( 'authenticationRedirect', $tds_auth );
 				set_query_var( 'returnUrl', $this->get_payment_return_url( $order_id, array(
-					'3DSecureId'         => $response['3DSecureId'],
-					'process_acs_result' => '1',
-					'session_id'         => $session_id,
-					'session_version'    => $session_version,
+					'3DSecureId'           => $response['3DSecureId'],
+					'process_acs_result'   => '1',
+					'session_id'           => $session_id,
+					'session_version'      => $session_version,
+					$token_key => isset( $_REQUEST[ $token_key ] ) ? $_REQUEST[ $token_key ] : null
 				) ) );
 
 				set_query_var( 'order', $order );
@@ -437,7 +446,8 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 					$tds_id,
 					$session,
 					$order_builder->getCustomer(),
-					$order_builder->getBilling()
+					$order_builder->getBilling(),
+					$this->get_token_from_request()
 				);
 			} else {
 				$mpgs_txn = $this->service->authorize(
@@ -447,7 +457,8 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 					$tds_id,
 					$session,
 					$order_builder->getCustomer(),
-					$order_builder->getBilling()
+					$order_builder->getBilling(),
+					$this->get_token_from_request()
 				);
 			}
 

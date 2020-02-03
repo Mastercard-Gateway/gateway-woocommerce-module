@@ -349,7 +349,7 @@ class Mastercard_GatewayService {
 	 * @return mixed|ResponseInterface
 	 * @throws Exception
 	 */
-	public function check3dsEnrollment( $data, $order, $session = null, $source_of_funds = null ) {
+	public function check3dsEnrollment( $data, $order, $session = null, $source_of_funds = array() ) {
 		$tds_id = uniqid( sprintf( '3DS-' ), true );
 		$uri    = $this->apiUrl . '3DSecureId/' . $tds_id;
 
@@ -358,7 +358,7 @@ class Mastercard_GatewayService {
 			'3DSecure'      => $data,
 			'order'         => $order,
 			'session'       => $session,
-			'sourceOfFunds' => $source_of_funds,
+			'sourceOfFunds' => $source_of_funds ?: null,
 		) ) );
 
 		$response = $this->client->sendRequest( $request );
@@ -423,6 +423,7 @@ class Mastercard_GatewayService {
 	 * @param array $session
 	 * @param array $customer
 	 * @param array $billing
+	 * @param array $token
 	 *
 	 * @return mixed|ResponseInterface
 	 * @throws Exception
@@ -434,7 +435,8 @@ class Mastercard_GatewayService {
 		$tds_id = null,
 		$session = array(),
 		$customer = array(),
-		$billing = array()
+		$billing = array(),
+		$token = array()
 	) {
 		$uri = $this->apiUrl . 'order/' . $orderId . '/transaction/' . $txnId;
 
@@ -447,9 +449,9 @@ class Mastercard_GatewayService {
 			) ),
 			'billing'           => $billing,
 			'customer'          => $customer,
-			'sourceOfFunds'     => array(
+			'sourceOfFunds'     => array_merge( $token, array(
 				'type' => 'CARD'
-			),
+			) ),
 			'session'           => $session,
 		) ) );
 
@@ -477,6 +479,7 @@ class Mastercard_GatewayService {
 	 * @param array $session
 	 * @param array $customer
 	 * @param array $billing
+	 * @param array $token
 	 *
 	 * @return mixed|ResponseInterface
 	 * @throws Exception
@@ -488,7 +491,8 @@ class Mastercard_GatewayService {
 		$tds_id = null,
 		$session = array(),
 		$customer = array(),
-		$billing = array()
+		$billing = array(),
+		$token = array()
 	) {
 		$uri = $this->apiUrl . 'order/' . $orderId . '/transaction/' . $txnId;
 
@@ -501,9 +505,9 @@ class Mastercard_GatewayService {
 			) ),
 			'billing'           => $billing,
 			'customer'          => $customer,
-			'sourceOfFunds'     => array(
+			'sourceOfFunds'     => array_merge( $token, array(
 				'type' => 'CARD'
-			),
+			) ),
 			'session'           => $session,
 		) ) );
 
