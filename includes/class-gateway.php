@@ -798,11 +798,11 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				'default'     => 'yes',
 			),
 			'hc_type'            => array(
-				'title'   => __( 'Payment Behaviour', 'woocommerce' ),
+				'title'   => __( 'Checkout Interaction', 'woocommerce' ),
 				'type'    => 'select',
 				'options' => array(
-					self::HC_TYPE_REDIRECT => __( 'Redirect', 'woocommerce' ),
-					self::HC_TYPE_MODAL    => __( 'Modal', 'woocommerce' )
+					self::HC_TYPE_REDIRECT => __( 'Redirect Payment Page', 'woocommerce' ),
+					self::HC_TYPE_MODAL    => __( 'Lightbox', 'woocommerce' )
 				),
 				'default' => self::HC_TYPE_MODAL,
 			),

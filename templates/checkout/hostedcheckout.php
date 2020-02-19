@@ -49,6 +49,16 @@
             });
         }
 
+        function waitFor(name, callback) {
+            if (typeof window[name] === "undefined") {
+                setTimeout(function () {
+                    waitFor(name, callback);
+                }, 200);
+            } else {
+                callback();
+            }
+        }
+
         function configureHostedCheckout(sessionData) {
             let config = {
                 merchant: '<?php echo $gateway->get_merchant_id() ?>',
@@ -57,8 +67,11 @@
                     version: sessionData.session.version
                 }
             };
-            Checkout.configure(config);
-            togglePay();
+
+            waitFor('Checkout', function () {
+                Checkout.configure(config);
+                togglePay();
+            });
         }
 
         let xhr = $.ajax({

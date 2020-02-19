@@ -23,7 +23,8 @@ jQuery(function ($) {
                 password = $('#woocommerce_mpgs_gateway_password').parents('tr').eq(0),
                 threedsecure = $('#woocommerce_mpgs_gateway_threedsecure').parents('tr').eq(0),
                 gateway_url = $('#woocommerce_mpgs_gateway_custom_gateway_url').parents('tr').eq(0),
-                hc_type = $('#woocommerce_mpgs_gateway_hc_type').parents('tr').eq(0);
+                hc_type = $('#woocommerce_mpgs_gateway_hc_type').parents('tr').eq(0),
+                saved_cards = $('#woocommerce_mpgs_gateway_saved_cards').parents('tr').eq(0);
 
             $('#woocommerce_mpgs_gateway_sandbox').on('change', function () {
                 if ($(this).is(':checked')) {
@@ -41,11 +42,15 @@ jQuery(function ($) {
 
             $('#woocommerce_mpgs_gateway_method').on('change', function () {
                 if ($(this).val() === 'hostedcheckout') {
+                    // Hosted Checkout
                     threedsecure.hide();
                     hc_type.show();
+                    saved_cards.hide();
                 } else {
+                    // Hosted Session
                     threedsecure.show();
                     hc_type.hide();
+                    saved_cards.show();
                 }
             }).change();
 
