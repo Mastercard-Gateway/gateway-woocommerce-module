@@ -27,21 +27,21 @@ class Mastercard_Payment_Gateway_CC extends WC_Payment_Gateway_CC
 
 		$cvc_field = '<p class="form-row form-row-wide">
 			<label for="' . esc_attr( $this->id ) . '-card-cvc">' . esc_html__( 'Card code', 'woocommerce' ) . '&nbsp;<span class="required">*</span></label>
-			<input id="' . esc_attr( $this->id ) . '-card-cvc" class="input-text wc-credit-card-form-card-cvc" readonly="readonly" inputmode="numeric" autocomplete="off" autocorrect="no" autocapitalize="no" spellcheck="no" type="tel" maxlength="4" placeholder="' . esc_attr__( 'CVC', 'woocommerce' ) . '" ' . $this->field_name( 'card-cvc' ) . ' style="width:100px" />
+			<input id="' . esc_attr( $this->id ) . '-card-cvc" class="input-text wc-credit-card-form-card-cvc" readonly="readonly" inputmode="numeric" autocomplete="off" autocorrect="no" autocapitalize="no" spellcheck="no" type="tel" maxlength="4" ' . $this->field_name( 'card-cvc' ) . ' style="width:100px" />
 		</p>';
 
 		$default_fields = array(
 			'card-number-field' => '<p class="form-row form-row-wide">
 				<label for="' . esc_attr( $this->id ) . '-card-number">' . esc_html__( 'Card number', 'woocommerce' ) . '&nbsp;<span class="required">*</span></label>
-				<input id="' . esc_attr( $this->id ) . '-card-number" class="input-text wc-credit-card-form-card-number" inputmode="numeric" readonly="readonly" autocomplete="cc-number" autocorrect="no" autocapitalize="no" spellcheck="no" type="tel" placeholder="&bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull;" ' . $this->field_name( 'card-number' ) . ' />
+				<input id="' . esc_attr( $this->id ) . '-card-number" class="input-text wc-credit-card-form-card-number" inputmode="numeric" readonly="readonly" autocomplete="cc-number" autocorrect="no" autocapitalize="no" spellcheck="no" type="tel" ' . $this->field_name( 'card-number' ) . ' />
 			</p>',
 			'card-expiry-month-field' => '<p class="form-row form-row-first">
 				<label for="' . esc_attr( $this->id ) . '-card-expiry-month">' . esc_html__( 'Expiry (MM)', 'woocommerce' ) . '&nbsp;<span class="required">*</span></label>
-				<input id="' . esc_attr( $this->id ) . '-card-expiry-month" class="input-text wc-credit-card-form-card-expiry" inputmode="numeric" readonly="readonly" autocomplete="cc-exp-month" autocorrect="no" autocapitalize="no" spellcheck="no" type="tel" placeholder="' . esc_attr__( 'MM', 'woocommerce' ) . '" ' . $this->field_name( 'card-expiry-month' ) . ' />
+				<input id="' . esc_attr( $this->id ) . '-card-expiry-month" class="input-text wc-credit-card-form-card-expiry" inputmode="numeric" readonly="readonly" autocomplete="cc-exp-month" autocorrect="no" autocapitalize="no" spellcheck="no" type="tel" ' . $this->field_name( 'card-expiry-month' ) . ' />
 			</p>',
 			'card-expiry-year-field' => '<p class="form-row form-row-last">
 				<label for="' . esc_attr( $this->id ) . '-card-expiry-year">' . esc_html__( 'Expiry (YY)', 'woocommerce' ) . '&nbsp;<span class="required">*</span></label>
-				<input id="' . esc_attr( $this->id ) . '-card-expiry-year" class="input-text wc-credit-card-form-card-expiry" inputmode="numeric" readonly="readonly" autocomplete="cc-exp-year" autocorrect="no" autocapitalize="no" spellcheck="no" type="tel" placeholder="' . esc_attr__( 'YY', 'woocommerce' ) . '" ' . $this->field_name( 'card-expiry-year' ) . ' />
+				<input id="' . esc_attr( $this->id ) . '-card-expiry-year" class="input-text wc-credit-card-form-card-expiry" inputmode="numeric" readonly="readonly" autocomplete="cc-exp-year" autocorrect="no" autocapitalize="no" spellcheck="no" type="tel" ' . $this->field_name( 'card-expiry-year' ) . ' />
 			</p>',
 		);
 
@@ -66,7 +66,7 @@ class Mastercard_Payment_Gateway_CC extends WC_Payment_Gateway_CC
 			echo '<fieldset class="token-cvc" id="token-cvc-'.$token->get_id().'">
                 <p class="form-row form-row-wide">
 			        <label for="' . esc_attr( $this->id ) . '-saved-card-cvc-'.$token->get_id().'">' . esc_html__( 'Card code', 'woocommerce' ) . '&nbsp;<span class="required">*</span></label>
-			        <input id="' . esc_attr( $this->id ) . '-saved-card-cvc-'.$token->get_id().'" class="input-text wc-credit-card-form-card-cvc" readonly="readonly" inputmode="numeric" autocomplete="off" autocorrect="no" autocapitalize="no" spellcheck="no" type="tel" maxlength="4" placeholder="' . esc_attr__( 'CVC', 'woocommerce' ) . '" style="width:100px" />
+			        <input id="' . esc_attr( $this->id ) . '-saved-card-cvc-'.$token->get_id().'" class="input-text wc-credit-card-form-card-cvc" readonly="readonly" inputmode="numeric" autocomplete="off" autocorrect="no" autocapitalize="no" spellcheck="no" type="tel" maxlength="4" style="width:100px" />
                 </p>
             </fieldset>';
 		}
