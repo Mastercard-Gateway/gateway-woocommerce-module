@@ -38,6 +38,24 @@ use Psr\Log\LoggerInterface;
 
 class Mastercard_ApiErrorPlugin implements Plugin {
 	/**
+	 * @var LoggerInterface
+	 */
+	private $logger;
+
+	/**
+	 * @var Formatter
+	 */
+	private $formatter;
+
+	/**
+	 * @inheritdoc
+	 */
+	public function __construct( LoggerInterface $logger, Formatter $formatter = null ) {
+		$this->logger    = $logger;
+		$this->formatter = $formatter ?: new SimpleFormatter();
+	}
+
+	/**
 	 * @inheritdoc
 	 */
 	public function handleRequest( \Psr\Http\Message\RequestInterface $request, callable $next, callable $first ) {
@@ -68,10 +86,13 @@ class Mastercard_ApiErrorPlugin implements Plugin {
 			if ( isset( $responseData['error']['explanation'] ) ) {
 				$msg .= $responseData['error']['explanation'];
 			}
+
+			$this->logger->error( $msg );
 			throw new ClientErrorException( $msg, $request, $response );
 		}
 
 		if ( $response->getStatusCode() >= 500 && $response->getStatusCode() < 600 ) {
+			$this->logger->error( $response->getReasonPhrase() );
 			throw new ServerErrorException( $response->getReasonPhrase(), $request, $response );
 		}
 
@@ -107,7 +128,8 @@ class Mastercard_ApiLoggerPlugin implements Plugin {
 			$reqBody = $request->getBody();
 		}
 
-		$this->logger->info( sprintf( 'Emit request: "%s"', $this->formatter->formatRequest( $request ) ), [ 'request' => $reqBody ] );
+		$this->logger->info( sprintf( 'Emit request: "%s"', $this->formatter->formatRequest( $request ) ),
+			[ 'request' => $reqBody ] );
 
 		return $next( $request )->then( function ( ResponseInterface $response ) use ( $request ) {
 			$body = @json_decode( $response->getBody(), true );
@@ -115,7 +137,8 @@ class Mastercard_ApiLoggerPlugin implements Plugin {
 				$body = $response->getBody();
 			}
 			$this->logger->info(
-				sprintf( 'Receive response: "%s" for request: "%s"', $this->formatter->formatResponse( $response ), $this->formatter->formatRequest( $request ) ),
+				sprintf( 'Receive response: "%s" for request: "%s"', $this->formatter->formatResponse( $response ),
+					$this->formatter->formatRequest( $request ) ),
 				[
 					'response' => $body,
 				]
@@ -125,7 +148,9 @@ class Mastercard_ApiLoggerPlugin implements Plugin {
 		}, function ( \Exception $exception ) use ( $request ) {
 			if ( $exception instanceof Exception\HttpException ) {
 				$this->logger->error(
-					sprintf( 'Error: "%s" with response: "%s" when emitting request: "%s"', $exception->getMessage(), $this->formatter->formatResponse( $exception->getResponse() ), $this->formatter->formatRequest( $request ) ),
+					sprintf( 'Error: "%s" with response: "%s" when emitting request: "%s"', $exception->getMessage(),
+						$this->formatter->formatResponse( $exception->getResponse() ),
+						$this->formatter->formatRequest( $request ) ),
 					[
 						'request'   => $request,
 						'response'  => $exception->getResponse(),
@@ -134,7 +159,8 @@ class Mastercard_ApiLoggerPlugin implements Plugin {
 				);
 			} else {
 				$this->logger->error(
-					sprintf( 'Error: "%s" when emitting request: "%s"', $exception->getMessage(), $this->formatter->formatRequest( $request ) ),
+					sprintf( 'Error: "%s" when emitting request: "%s"', $exception->getMessage(),
+						$this->formatter->formatRequest( $request ) ),
 					[
 						'request'   => $request,
 						'exception' => $exception,
@@ -181,16 +207,24 @@ class Mastercard_GatewayService {
 	 * @param string $merchantId
 	 * @param string $password
 	 * @param string $webhookUrl
+	 * @param int $loggingLevel
 	 *
 	 * @throws \Exception
 	 */
-	public function __construct( $baseUrl, $apiVersion, $merchantId, $password, $webhookUrl ) {
+	public function __construct(
+		$baseUrl,
+		$apiVersion,
+		$merchantId,
+		$password,
+		$webhookUrl,
+		$loggingLevel = \Monolog\Logger::DEBUG
+	) {
 		$this->webhookUrl = $webhookUrl;
 
 		$logger = new Logger( 'mastercard' );
 		$logger->pushHandler( new StreamHandler(
 			WP_CONTENT_DIR . '/mastercard.log',
-			\Monolog\Logger::DEBUG // @todo: replace default value
+			$loggingLevel
 		) );
 
 		$this->messageFactory = new GuzzleMessageFactory();
@@ -205,7 +239,7 @@ class Mastercard_GatewayService {
 				new ContentLengthPlugin(),
 				new HeaderSetPlugin( [ 'Content-Type' => 'application/json;charset=UTF-8' ] ),
 				new AuthenticationPlugin( new BasicAuth( $username, $password ) ),
-				new Mastercard_ApiErrorPlugin(),
+				new Mastercard_ApiErrorPlugin( $logger ),
 				new Mastercard_ApiLoggerPlugin( $logger ),
 			)
 		);
