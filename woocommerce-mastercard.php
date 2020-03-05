@@ -53,14 +53,14 @@ class WC_Mastercard {
 		require_once plugin_basename( '/vendor/autoload.php' );
 		require_once plugin_basename( '/includes/class-gateway.php' );
 
-		load_plugin_textdomain( 'mastercard', false, trailingslashit( dirname( plugin_basename( __FILE__ ) ) ) );
+		load_plugin_textdomain( 'mastercard', false, trailingslashit( dirname( plugin_basename( __FILE__ ) ) ) . 'i18n/' );
 
 		add_filter( 'woocommerce_order_actions', function ( $actions ) {
 			$order = new WC_Order( $_REQUEST['post'] );
 			if ( $order->get_payment_method() == Mastercard_Gateway::ID ) {
 				if ( ! $order->get_meta( '_mpgs_order_captured' ) ) {
 					if ( $order->get_status() == 'processing' ) {
-						$actions['mpgs_capture_order'] = __( 'Capture payment', 'woocommerce' );
+						$actions['mpgs_capture_order'] = __( 'Capture payment', 'mastercard' );
 					}
 				}
 			}

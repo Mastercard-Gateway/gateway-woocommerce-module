@@ -38,7 +38,7 @@
     <div id="hostedsession_errors" style="color: red; display: none;" class="errors"></div>
 
     <p class="form-row form-row-wide">
-        <button type="button" id="mpgs_pay" onclick="mpgsPayWithSelectedInstrument()"><?php echo __( 'Pay', 'woocommerce' ) ?></button>
+        <button type="button" id="mpgs_pay" onclick="mpgsPayWithSelectedInstrument()"><?php echo __( 'Pay', 'mastercard' ) ?></button>
     </p>
 </form>
 

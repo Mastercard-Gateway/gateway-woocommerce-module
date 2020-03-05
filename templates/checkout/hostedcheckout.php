@@ -22,9 +22,9 @@
 ?>
 
 <?php if ( $gateway->use_modal() ): ?>
-    <input type="button" id="mpgs_pay" value="<?php echo __( 'Pay', 'woocommerce' ) ?>" onclick="Checkout.showLightbox();"/>
+    <input type="button" id="mpgs_pay" value="<?php echo __( 'Pay', 'mastercard' ) ?>" onclick="Checkout.showLightbox();"/>
 <?php else: ?>
-    <input type="button" id="mpgs_pay" value="<?php echo __( 'Pay', 'woocommerce' ) ?>" onclick="Checkout.showPaymentPage();"/>
+    <input type="button" id="mpgs_pay" value="<?php echo __( 'Pay', 'mastercard' ) ?>" onclick="Checkout.showPaymentPage();"/>
 <?php endif; ?>
 
 <script async src="<?php echo $gateway->get_hosted_checkout_js() ?>"

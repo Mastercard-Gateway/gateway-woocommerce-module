@@ -9,9 +9,9 @@
 <!doctype html>
 <html>
     <head>
-        <title><?php echo __( 'Processing Secure Payment', 'woocommerce' ) ?></title>
+        <title><?php echo __( 'Processing Secure Payment', 'mastercard' ) ?></title>
         <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
-        <meta name="description" content="<?php echo __( 'Processing Secure Payment', 'woocommerce' ) ?>"/>
+        <meta name="description" content="<?php echo __( 'Processing Secure Payment', 'mastercard' ) ?>"/>
         <meta name="robots" content="noindex"/>
         <style type="text/css">
             body {
@@ -54,7 +54,7 @@
             <noscript>
                 <div id="msg">
                     <div id="submitButton">
-                        <input type="submit" value="<?php echo __( 'Click here to continue', 'woocommerce' ) ?>"
+                        <input type="submit" value="<?php echo __( 'Click here to continue', 'mastercard' ) ?>"
                                class="button"/>
                     </div>
                 </div>

@@ -1,0 +1,310 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Mastercard\n"
+"POT-Creation-Date: 2020-03-05 11:16+0200\n"
+"PO-Revision-Date: 2020-03-05 11:21+0200\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 2.3\n"
+"X-Poedit-Basepath: ..\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Poedit-KeywordsList: __;_e;esc_html__\n"
+"X-Poedit-SearchPath-0: .\n"
+
+#: includes/class-gateway.php:102 includes/class-gateway.php:103
+#: includes/class-gateway.php:749
+msgid "Mastercard Payment Gateway Services"
+msgstr "Servicios de Mastercard Payment Gateway"
+
+#: includes/class-gateway.php:105
+msgid ""
+"Accept payments on your WooCommerce store using Mastercard Payment Gateway "
+"Services."
+msgstr ""
+"Acepta pagos en tu tienda WooCommerce usando Mastercard Payment Gateway "
+"Services."
+
+#: includes/class-gateway.php:177
+#, php-format
+msgid "Error communicating with Mastercard API: \"%s\""
+msgstr ""
+
+#: includes/class-gateway.php:212 includes/class-gateway.php:544
+#, php-format
+msgid "Mastercard payment CAPTURED (ID: %s, Auth Code: %s)"
+msgstr ""
+
+#: includes/class-gateway.php:229
+msgid ""
+"API credentials are not valid. To activate the payment methods please your "
+"details to the forms below."
+msgstr ""
+
+#: includes/class-gateway.php:247
+#, php-format
+msgid "Mastercard registered refund %s %s (ID: %s)"
+msgstr ""
+
+#: includes/class-gateway.php:377 includes/class-gateway.php:378
+#: includes/class-gateway.php:413 includes/class-gateway.php:414
+#: includes/class-gateway.php:476
+msgid "Payment was declined."
+msgstr ""
+
+#: includes/class-gateway.php:426 includes/class-gateway.php:427
+msgid "Unexpected payment condition error."
+msgstr ""
+
+#: includes/class-gateway.php:546
+#, php-format
+msgid "Mastercard payment AUTHORIZED (ID: %s, Auth Code: %s)"
+msgstr ""
+
+#: includes/class-gateway.php:688
+msgid "Pending payment"
+msgstr ""
+
+#: includes/class-gateway.php:736
+#, php-format
+msgid "Plugin version: %s<br />API version: %s"
+msgstr ""
+
+#: includes/class-gateway.php:739
+msgid "Enable/Disable"
+msgstr ""
+
+#: includes/class-gateway.php:740
+msgid "Enable"
+msgstr ""
+
+#: includes/class-gateway.php:746
+msgid "Title"
+msgstr ""
+
+#: includes/class-gateway.php:748
+msgid "This controls the title which the user sees during checkout."
+msgstr ""
+
+#: includes/class-gateway.php:752
+msgid "Description"
+msgstr ""
+
+#: includes/class-gateway.php:754
+msgid "This controls the description which the user sees during checkout."
+msgstr ""
+
+#: includes/class-gateway.php:758
+msgid "Gateway"
+msgstr ""
+
+#: includes/class-gateway.php:761
+msgid "Asia Pacific"
+msgstr ""
+
+#: includes/class-gateway.php:762
+msgid "Europe"
+msgstr ""
+
+#: includes/class-gateway.php:763
+msgid "North America"
+msgstr ""
+
+#: includes/class-gateway.php:764
+msgid "UAT"
+msgstr ""
+
+#: includes/class-gateway.php:765
+msgid "Custom URL"
+msgstr ""
+
+#: includes/class-gateway.php:770
+msgid "Custom Gateway Host"
+msgstr ""
+
+#: includes/class-gateway.php:772
+msgid ""
+"Only hostname without http prefix. For example mtf.gateway.mastercard.com"
+msgstr ""
+
+#: includes/class-gateway.php:775
+msgid "Transaction Mode"
+msgstr ""
+
+#: includes/class-gateway.php:778
+msgid "Purchase"
+msgstr ""
+
+#: includes/class-gateway.php:779
+msgid "Authorize"
+msgstr ""
+
+#: includes/class-gateway.php:782
+msgid ""
+"In \"Purchase\" mode, the customer is charged immediately. In Authorize "
+"mode, the transaction is only authorized, and the capturing of funds is a "
+"manual process that you have to do with the Woocommerce admin panel."
+msgstr ""
+
+#: includes/class-gateway.php:785
+msgid "Payment Model"
+msgstr ""
+
+#: includes/class-gateway.php:788
+msgid "Hosted Checkout"
+msgstr ""
+
+#: includes/class-gateway.php:789
+msgid "Hosted Session"
+msgstr ""
+
+#: includes/class-gateway.php:794
+msgid "3D-Secure"
+msgstr ""
+
+#: includes/class-gateway.php:795
+msgid "Use 3D-Secure"
+msgstr ""
+
+#: includes/class-gateway.php:797
+msgid "Be sure to Enable 3D-Secure in your Mastercard account."
+msgstr ""
+
+#: includes/class-gateway.php:801
+msgid "Checkout Interaction"
+msgstr ""
+
+#: includes/class-gateway.php:804
+msgid "Redirect Payment Page"
+msgstr ""
+
+#: includes/class-gateway.php:805
+msgid "Lightbox"
+msgstr ""
+
+#: includes/class-gateway.php:810
+msgid "Saved Cards"
+msgstr ""
+
+#: includes/class-gateway.php:811
+msgid "Enable Payment via Saved Cards"
+msgstr ""
+
+#: includes/class-gateway.php:813
+msgid ""
+"If enabled, users will be able to pay with a saved card during checkout. "
+"Card details are saved on Mastercard servers, not on your store."
+msgstr ""
+
+#: includes/class-gateway.php:817
+msgid "API credentials"
+msgstr ""
+
+#: includes/class-gateway.php:819
+#, php-format
+msgid ""
+"Enter your Mastercard API credentials to process payments via Mastercard. "
+"Learn how to access your <a href=\"%s\" target=\"_blank\">Mastercard API "
+"Credentials</a>."
+msgstr ""
+
+#: includes/class-gateway.php:822
+msgid "Sandbox"
+msgstr ""
+
+#: includes/class-gateway.php:823
+msgid "Enable Sandbox Mode"
+msgstr ""
+
+#: includes/class-gateway.php:825
+msgid ""
+"Place the payment gateway in sandbox mode using sandbox API keys (real "
+"payments will not be taken)."
+msgstr ""
+
+#: includes/class-gateway.php:829
+msgid "Sandbox Merchant ID"
+msgstr ""
+
+#: includes/class-gateway.php:831 includes/class-gateway.php:837
+#: includes/class-gateway.php:843 includes/class-gateway.php:849
+msgid "Get your API keys from your Mastercard account: Settings > API Keys."
+msgstr ""
+
+#: includes/class-gateway.php:835
+msgid "Sandbox Password"
+msgstr ""
+
+#: includes/class-gateway.php:841
+msgid "Merchant ID"
+msgstr ""
+
+#: includes/class-gateway.php:847
+msgid "Password"
+msgstr ""
+
+#: includes/class-payment-gateway-cc.php:29
+#: includes/class-payment-gateway-cc.php:68
+msgid "Card code"
+msgstr "Código de tarjeta"
+
+#: includes/class-payment-gateway-cc.php:35
+msgid "Card number"
+msgstr ""
+
+#: includes/class-payment-gateway-cc.php:39
+msgid "Expiry (MM)"
+msgstr ""
+
+#: includes/class-payment-gateway-cc.php:43
+msgid "Expiry (YY)"
+msgstr ""
+
+#: templates/3dsecure/form.php:12 templates/3dsecure/form.php:14
+msgid "Processing Secure Payment"
+msgstr ""
+
+#: templates/3dsecure/form.php:57
+msgid "Click here to continue"
+msgstr ""
+
+#: templates/checkout/hostedcheckout.php:25
+#: templates/checkout/hostedcheckout.php:27
+#: templates/checkout/hostedsession.php:41
+msgid "Pay"
+msgstr ""
+
+#: templates/checkout/hostedsession.php:65
+msgid "Invalid Card Number"
+msgstr ""
+
+#: templates/checkout/hostedsession.php:66
+msgid "Invalid Security Code"
+msgstr ""
+
+#: templates/checkout/hostedsession.php:67
+msgid "Invalid Expiry Month"
+msgstr ""
+
+#: templates/checkout/hostedsession.php:68
+msgid "Invalid Expiry Year"
+msgstr ""
+
+#: woocommerce-mastercard.php:63
+msgid "Capture payment"
+msgstr ""
+
+#: woocommerce-mastercard.php:156
+msgid "Support"
+msgstr ""
+
+#: woocommerce-mastercard.php:157
+msgid "Docs"
+msgstr ""
+
+#: woocommerce-mastercard.php:158
+msgid "Settings"
+msgstr ""
