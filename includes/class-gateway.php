@@ -776,7 +776,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			'description'        => array(
 				'title'       => __( 'Description', 'mastercard' ),
 				'type'        => 'text',
-				'description' => __( 'This controls the description which the user sees during checkout.',
+				'description' => __( 'The description displayed when this payment method is selected.',
 					'mastercard' ),
 				'default'     => 'Pay with your card via Mastercard.',
 			),
@@ -787,7 +787,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 					self::API_AS     => __( 'Asia Pacific', 'mastercard' ),
 					self::API_EU     => __( 'Europe', 'mastercard' ),
 					self::API_NA     => __( 'North America', 'mastercard' ),
-					self::API_UAT    => __( 'UAT', 'mastercard' ),
+					//self::API_UAT    => __( 'UAT', 'mastercard' ),
 					self::API_CUSTOM => __( 'Custom URL', 'mastercard' ),
 				),
 				'default' => self::API_EU,
@@ -795,7 +795,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			'custom_gateway_url' => array(
 				'title'       => __( 'Custom Gateway Host', 'mastercard' ),
 				'type'        => 'text',
-				'description' => __( 'Only hostname without http prefix. For example mtf.gateway.mastercard.com' )
+				'description' => __( 'Enter only the hostname without https prefix. For example na.gateway.mastercard.com.' )
 			),
 			'txn_mode'           => array(
 				'title'       => __( 'Transaction Mode', 'mastercard' ),
@@ -805,11 +805,11 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 					self::TXN_MODE_AUTH_CAPTURE => __( 'Authorize', 'mastercard' )
 				),
 				'default'     => self::TXN_MODE_PURCHASE,
-				'description' => __( 'In "Purchase" mode, the customer is charged immediately. In Authorize mode, the transaction is only authorized, and the capturing of funds is a manual process that you have to do with the Woocommerce admin panel.',
+				'description' => __( 'In “Purchase” mode, the customer is charged immediately. In Authorize mode, the transaction is only authorized and the capturing of funds is a manual process that you do using the Woocommerce admin panel.',
 					'mastercard' ),
 			),
 			'method'             => array(
-				'title'   => __( 'Payment Model', 'mastercard' ),
+				'title'   => __( 'Integration Model', 'mastercard' ),
 				'type'    => 'select',
 				'options' => array(
 					self::HOSTED_CHECKOUT => __( 'Hosted Checkout', 'mastercard' ),
@@ -821,7 +821,8 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				'title'       => __( '3D-Secure', 'mastercard' ),
 				'label'       => __( 'Use 3D-Secure', 'mastercard' ),
 				'type'        => 'checkbox',
-				'description' => __( 'Be sure to Enable 3D-Secure in your Mastercard account.', 'mastercard' ),
+				'description' => __( 'For more information please contact your payment service provider.',
+					'mastercard' ),
 				'default'     => 'yes',
 			),
 			'hc_type'            => array(
@@ -835,9 +836,9 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			),
 			'saved_cards'        => array(
 				'title'       => __( 'Saved Cards', 'mastercard' ),
-				'label'       => __( 'Enable Payment via Saved Cards', 'mastercard' ),
+				'label'       => __( 'Enable payment via saved tokenized cards', 'mastercard' ),
 				'type'        => 'checkbox',
-				'description' => __( 'If enabled, users will be able to pay with a saved card during checkout. Card details are saved on Mastercard servers, not on your store.',
+				'description' => __( 'If enabled, users will be able to pay with a saved card during checkout. Card details are saved in the payment gateway, not on your store.',
 					'mastercard' ),
 				'default'     => 'yes',
 			),
@@ -852,45 +853,37 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			'api_details'        => array(
 				'title'       => __( 'API credentials', 'mastercard' ),
 				'type'        => 'title',
-				'description' => sprintf( __( 'Enter your Mastercard API credentials to process payments via Mastercard. Learn how to access your <a href="%s" target="_blank">Mastercard API Credentials</a>.',
+				'description' => sprintf( __( 'Enter your API credentials to process payments via this payment gateway. Learn how to access your <a href="%s" target="_blank">Gateway API Credentials</a>.',
 					'mastercard' ),
 					'https://test-gateway.mastercard.com/api/documentation/integrationGuidelines/supportedFeatures/pickSecurityModel/secureYourIntegration.html?locale=en_US' ),
 			),
 			'sandbox'            => array(
-				'title'       => __( 'Sandbox', 'mastercard' ),
-				'label'       => __( 'Enable Sandbox Mode', 'mastercard' ),
+				'title'       => __( 'Test Sandbox', 'mastercard' ),
+				'label'       => __( 'Enable test simulator sandbox mode', 'mastercard' ),
 				'type'        => 'checkbox',
-				'description' => __( 'Place the payment gateway in sandbox mode using sandbox API keys (real payments will not be taken).',
+				'description' => __( 'Place the payment gateway in test mode using test API credentials (real payments will not be taken).',
 					'mastercard' ),
 				'default'     => 'yes'
 			),
 			'sandbox_username'   => array(
-				'title'       => __( 'Sandbox Merchant ID', 'mastercard' ),
-				'type'        => 'text',
-				'description' => __( 'Get your API keys from your Mastercard account: Settings > API Keys.',
-					'mastercard' ),
-				'default'     => '',
+				'title'   => __( 'Test Merchant ID', 'mastercard' ),
+				'type'    => 'text',
+				'default' => '',
 			),
 			'sandbox_password'   => array(
-				'title'       => __( 'Sandbox Password', 'mastercard' ),
-				'type'        => 'password',
-				'description' => __( 'Get your API keys from your Mastercard account: Settings > API Keys.',
-					'mastercard' ),
-				'default'     => '',
+				'title'   => __( 'Test API Password', 'mastercard' ),
+				'type'    => 'password',
+				'default' => '',
 			),
 			'username'           => array(
-				'title'       => __( 'Merchant ID', 'mastercard' ),
-				'type'        => 'text',
-				'description' => __( 'Get your API keys from your Mastercard account: Settings > API Keys.',
-					'mastercard' ),
-				'default'     => '',
+				'title'   => __( 'Merchant ID', 'mastercard' ),
+				'type'    => 'text',
+				'default' => '',
 			),
 			'password'           => array(
-				'title'       => __( 'Password', 'mastercard' ),
-				'type'        => 'password',
-				'description' => __( 'Get your API keys from your Mastercard account: Settings > API Keys.',
-					'mastercard' ),
-				'default'     => '',
+				'title'   => __( 'API Password', 'mastercard' ),
+				'type'    => 'password',
+				'default' => '',
 			),
 		);
 	}

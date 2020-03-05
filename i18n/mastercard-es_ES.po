@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Mastercard\n"
-"POT-Creation-Date: 2020-03-05 13:37+0200\n"
-"PO-Revision-Date: 2020-03-05 13:38+0200\n"
+"POT-Creation-Date: 2020-03-05 14:43+0200\n"
+"PO-Revision-Date: 2020-03-05 14:43+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: es\n"
@@ -94,7 +94,7 @@ msgid "Description"
 msgstr ""
 
 #: includes/class-gateway.php:779
-msgid "This controls the description which the user sees during checkout."
+msgid "The description displayed when this payment method is selected."
 msgstr ""
 
 #: includes/class-gateway.php:784
@@ -113,10 +113,6 @@ msgstr ""
 msgid "North America"
 msgstr ""
 
-#: includes/class-gateway.php:790
-msgid "UAT"
-msgstr ""
-
 #: includes/class-gateway.php:791
 msgid "Custom URL"
 msgstr ""
@@ -127,7 +123,8 @@ msgstr ""
 
 #: includes/class-gateway.php:798
 msgid ""
-"Only hostname without http prefix. For example mtf.gateway.mastercard.com"
+"Enter only the hostname without https prefix. For example na.gateway."
+"mastercard.com."
 msgstr ""
 
 #: includes/class-gateway.php:801
@@ -144,13 +141,13 @@ msgstr ""
 
 #: includes/class-gateway.php:808
 msgid ""
-"In \"Purchase\" mode, the customer is charged immediately. In Authorize "
-"mode, the transaction is only authorized, and the capturing of funds is a "
-"manual process that you have to do with the Woocommerce admin panel."
+"In “Purchase” mode, the customer is charged immediately. In Authorize mode, "
+"the transaction is only authorized and the capturing of funds is a manual "
+"process that you do using the Woocommerce admin panel."
 msgstr ""
 
 #: includes/class-gateway.php:812
-msgid "Payment Model"
+msgid "Integration Model"
 msgstr ""
 
 #: includes/class-gateway.php:815
@@ -170,94 +167,89 @@ msgid "Use 3D-Secure"
 msgstr ""
 
 #: includes/class-gateway.php:824
-msgid "Be sure to Enable 3D-Secure in your Mastercard account."
+msgid "For more information please contact your payment service provider."
 msgstr ""
 
-#: includes/class-gateway.php:828
+#: includes/class-gateway.php:829
 msgid "Checkout Interaction"
 msgstr ""
 
-#: includes/class-gateway.php:831
+#: includes/class-gateway.php:832
 msgid "Redirect Payment Page"
 msgstr ""
 
-#: includes/class-gateway.php:832
+#: includes/class-gateway.php:833
 msgid "Lightbox"
 msgstr ""
 
-#: includes/class-gateway.php:837
+#: includes/class-gateway.php:838
 msgid "Saved Cards"
 msgstr ""
 
-#: includes/class-gateway.php:838
-msgid "Enable Payment via Saved Cards"
+#: includes/class-gateway.php:839
+msgid "Enable payment via saved tokenized cards"
 msgstr ""
 
-#: includes/class-gateway.php:840
+#: includes/class-gateway.php:841
 msgid ""
 "If enabled, users will be able to pay with a saved card during checkout. "
-"Card details are saved on Mastercard servers, not on your store."
-msgstr ""
-
-#: includes/class-gateway.php:845
-msgid "Debug Logging"
+"Card details are saved in the payment gateway, not on your store."
 msgstr ""
 
 #: includes/class-gateway.php:846
+msgid "Debug Logging"
+msgstr ""
+
+#: includes/class-gateway.php:847
 msgid "Enable Debug Logging"
 msgstr ""
 
-#: includes/class-gateway.php:848
+#: includes/class-gateway.php:849
 msgid ""
 "Logs all communication with Mastercard gateway to file ./wp-content/"
 "mastercard.log. Debug logging only works in Sandbox mode."
 msgstr ""
 
-#: includes/class-gateway.php:853
+#: includes/class-gateway.php:854
 msgid "API credentials"
 msgstr ""
 
-#: includes/class-gateway.php:855
+#: includes/class-gateway.php:856
 #, php-format
 msgid ""
-"Enter your Mastercard API credentials to process payments via Mastercard. "
-"Learn how to access your <a href=\"%s\" target=\"_blank\">Mastercard API "
+"Enter your API credentials to process payments via this payment gateway. "
+"Learn how to access your <a href=\"%s\" target=\"_blank\">Gateway API "
 "Credentials</a>."
 msgstr ""
 
-#: includes/class-gateway.php:860
-msgid "Sandbox"
-msgstr ""
-
 #: includes/class-gateway.php:861
-msgid "Enable Sandbox Mode"
+msgid "Test Sandbox"
 msgstr ""
 
-#: includes/class-gateway.php:863
+#: includes/class-gateway.php:862
+msgid "Enable test simulator sandbox mode"
+msgstr ""
+
+#: includes/class-gateway.php:864
 msgid ""
-"Place the payment gateway in sandbox mode using sandbox API keys (real "
+"Place the payment gateway in test mode using test API credentials (real "
 "payments will not be taken)."
 msgstr ""
 
-#: includes/class-gateway.php:868
-msgid "Sandbox Merchant ID"
+#: includes/class-gateway.php:869
+msgid "Test Merchant ID"
 msgstr ""
 
-#: includes/class-gateway.php:870 includes/class-gateway.php:877
-#: includes/class-gateway.php:884 includes/class-gateway.php:891
-msgid "Get your API keys from your Mastercard account: Settings > API Keys."
+#: includes/class-gateway.php:874
+msgid "Test API Password"
 msgstr ""
 
-#: includes/class-gateway.php:875
-msgid "Sandbox Password"
-msgstr ""
-
-#: includes/class-gateway.php:882
+#: includes/class-gateway.php:879
 msgid "Merchant ID"
 msgstr ""
 
-#: includes/class-gateway.php:889
-msgid "Password"
+#: includes/class-gateway.php:884
+msgid "API Password"
 msgstr ""
 
 #: includes/class-payment-gateway-cc.php:29
