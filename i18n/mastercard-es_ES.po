@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Mastercard\n"
-"POT-Creation-Date: 2020-03-05 14:43+0200\n"
-"PO-Revision-Date: 2020-03-05 14:43+0200\n"
+"POT-Creation-Date: 2020-03-13 14:51+0200\n"
+"PO-Revision-Date: 2020-03-13 14:52+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: es\n"
@@ -30,7 +30,7 @@ msgstr ""
 
 #: includes/class-gateway.php:196
 #, php-format
-msgid "Error communicating with Mastercard API: \"%s\""
+msgid "Error communicating with payment gateway API: \"%s\""
 msgstr ""
 
 #: includes/class-gateway.php:232 includes/class-gateway.php:565
@@ -175,7 +175,7 @@ msgid "Checkout Interaction"
 msgstr ""
 
 #: includes/class-gateway.php:832
-msgid "Redirect Payment Page"
+msgid "Redirect to Payment Page"
 msgstr ""
 
 #: includes/class-gateway.php:833
@@ -227,7 +227,7 @@ msgid "Test Sandbox"
 msgstr ""
 
 #: includes/class-gateway.php:862
-msgid "Enable test simulator sandbox mode"
+msgid "Enable test sandbox mode"
 msgstr ""
 
 #: includes/class-gateway.php:864
@@ -240,15 +240,19 @@ msgstr ""
 msgid "Test Merchant ID"
 msgstr ""
 
-#: includes/class-gateway.php:874
+#: includes/class-gateway.php:871
+msgid "This is your test merchant profile ID prefixed with TEST"
+msgstr ""
+
+#: includes/class-gateway.php:875
 msgid "Test API Password"
 msgstr ""
 
-#: includes/class-gateway.php:879
+#: includes/class-gateway.php:880
 msgid "Merchant ID"
 msgstr ""
 
-#: includes/class-gateway.php:884
+#: includes/class-gateway.php:885
 msgid "API Password"
 msgstr ""
 

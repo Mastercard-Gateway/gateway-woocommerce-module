@@ -193,7 +193,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			$service->paymentOptionsInquiry();
 		} catch ( Exception $e ) {
 			$this->add_error(
-				sprintf( __( 'Error communicating with Mastercard API: "%s"', 'mastercard' ), $e->getMessage() )
+				sprintf( __( 'Error communicating with payment gateway API: "%s"', 'mastercard' ), $e->getMessage() )
 			);
 		}
 
@@ -829,7 +829,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				'title'   => __( 'Checkout Interaction', 'mastercard' ),
 				'type'    => 'select',
 				'options' => array(
-					self::HC_TYPE_REDIRECT => __( 'Redirect Payment Page', 'mastercard' ),
+					self::HC_TYPE_REDIRECT => __( 'Redirect to Payment Page', 'mastercard' ),
 					self::HC_TYPE_MODAL    => __( 'Lightbox', 'mastercard' )
 				),
 				'default' => self::HC_TYPE_MODAL,
@@ -859,16 +859,17 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			),
 			'sandbox'            => array(
 				'title'       => __( 'Test Sandbox', 'mastercard' ),
-				'label'       => __( 'Enable test simulator sandbox mode', 'mastercard' ),
+				'label'       => __( 'Enable test sandbox mode', 'mastercard' ),
 				'type'        => 'checkbox',
 				'description' => __( 'Place the payment gateway in test mode using test API credentials (real payments will not be taken).',
 					'mastercard' ),
 				'default'     => 'yes'
 			),
 			'sandbox_username'   => array(
-				'title'   => __( 'Test Merchant ID', 'mastercard' ),
-				'type'    => 'text',
-				'default' => '',
+				'title'       => __( 'Test Merchant ID', 'mastercard' ),
+				'type'        => 'text',
+				'description' => __( 'This is your test merchant profile ID prefixed with TEST' ),
+				'default'     => '',
 			),
 			'sandbox_password'   => array(
 				'title'   => __( 'Test API Password', 'mastercard' ),
