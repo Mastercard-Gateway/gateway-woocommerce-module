@@ -1,21 +1,28 @@
+# Mastercard Payment Gateway Services module for WooCommerce
+## Compatibility
+The module has been tested with the WooCommerce version:
+- Version 3.9.3
 
-# Installation of Module
+The module has been tested with the WordPress version:
+- Version 5.2.4
+
+and with PHP versions:
+- 7.2
+- 7.3
+
+## Obtain the module
+You can obtain the module by downloading a release from: https://github.com/Mastercard-Gateway/gateway-woocommerce-module/releases
+## Installation of Module
 To use WooCommerce MPGS for WordPress, you need to install both the MasterCard Payment Gateway Services module and the WooCommerce module. 
-
 ### Steps to install WooCommerce for Wordpress:
 Follow the below steps:
 1. Connect to Backoffice of your shop with the available admin credentials.
-
 2. Go to **Plugins > Add New** on your WordPress site.
-
 3. Enter **WooCommerce** in the Search Plugins bar. 
 ![](images/1.png)
-
 4. Click **Install Now** and **Activate**.
 ![](images/2.png)
-
 5. Once the installation is complete, we need to configure the WooCommerce as per the steps in https://docs.woocommerce.com/document/woocommerce-setup-wizard/
-
 ### Steps to install MasterCard Payment Gateway Services for Wordpress
 Follow the below steps:
 1. There are two ways to install the plugin into Wordpress, either:
@@ -26,26 +33,20 @@ Goto: Admin => Plugins => Installed Plugins => Click on 'Add New' => Then in the
 ![](images/3.png)
 1.2.1 Then choose the module zip and click on the 'Install Now' button.
 ![](images/4.png)
-
-2. Activate the plugin through the ‘Plugins’ screen in WordPress.
+2. Activate the plugin through the 'Plugins' screen in WordPress.
  Goto: Admin => Plugins => Installed Plugins => MPGS => Click on "Activate Plugin"
 ![](images/5.png)
-
 3. Go to the WooCommerce backend settings page.
-
 4. Navigate to Payments tab, enable MPGS module and save changes then you are ready.
-
 ---
-# Configuring the Module
+## Configuring the Module
 Once you have installed the MasterCard Payment Gateway Services module, you can then configure it. 
 ### Steps to configure the module
 1. Log into your WordPress Admin Panel.  
 2. In the WordPress Admin Panel, select WooCommerce > Settings > Payments.
 ![](images/6.png)
-
 3. Locate "MasterCard Payment Gateway Services" and then click the "Manage" button.
 ![](images/7.png)
-
 3. The gateway configuration fields will be displayed. Configure according to your requirements and then click on the "Save Changes" button.
     - **Enable/Disable** - Tick the checkbox to make this Payment option available in the frontend. Un-tick it to Disable it so it will not display in the frontend.
     - **Title** - Short payment method name displayed to the payer on the checkout page. Example, "Credit Card / Debit Card".
@@ -61,11 +62,9 @@ Once you have installed the MasterCard Payment Gateway Services module, you can 
     - **Merchant ID** - Insert your account Merchant ID. Gateway Merchant Administrator: Admin > Integration Settings.
     - **API Password** - Insert your API Password. Gateway Merchant Administrator: Admin > Integration Settings.
 ---
-# Capture an Order.
+## Capture an Order.
 ### Steps to process a capture transaction on an order
 1. Edit the order in the admin. Path: Admin >  WooCommerce > Orders > Edit Order 
-
-2. On the right side of the order, you can open a dropdown menu and select “Capture Payment”. Ensure the order is authorized, (see Order Notes, right side of the order page), otherwise an already captured order will not have the “capture” option.
+2. On the right side of the order, you can open a dropdown menu and select "Capture Payment". Ensure the order is authorized, (see Order Notes, right side of the order page), otherwise an already captured order will not have the "capture" option.
 ![](images/8.png)
-
 3. After selecting "Capture Payment" as option, click the "Update" button to capture funds for this order.
