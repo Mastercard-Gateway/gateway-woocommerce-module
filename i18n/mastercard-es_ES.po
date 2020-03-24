@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Mastercard\n"
-"POT-Creation-Date: 2020-03-13 14:51+0200\n"
-"PO-Revision-Date: 2020-03-13 14:52+0200\n"
+"POT-Creation-Date: 2020-03-05 14:43+0200\n"
+"PO-Revision-Date: 2020-03-24 08:35+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: es\n"
@@ -30,114 +30,118 @@ msgstr ""
 
 #: includes/class-gateway.php:196
 #, php-format
-msgid "Error communicating with payment gateway API: \"%s\""
-msgstr ""
+msgid "Error communicating with Mastercard API: \"%s\""
+msgstr "Error en la comunicación con el API de Mastercard: \"%s\""
 
 #: includes/class-gateway.php:232 includes/class-gateway.php:565
 #, php-format
 msgid "Mastercard payment CAPTURED (ID: %s, Auth Code: %s)"
-msgstr ""
+msgstr "Mastercard pago CAPTURADO (ID: %s, Código de Autorización: %s)"
 
 #: includes/class-gateway.php:250
 msgid ""
 "API credentials are not valid. To activate the payment methods please your "
 "details to the forms below."
 msgstr ""
+"Las Credenciales API no son válidas. Para activar los métodos de pago "
+"complete los datos que se solicitan a continuación."
 
 #: includes/class-gateway.php:268
 #, php-format
 msgid "Mastercard registered refund %s %s (ID: %s)"
-msgstr ""
+msgstr "Mastercard reembolso registrado %s %s (ID: %s)"
 
 #: includes/class-gateway.php:398 includes/class-gateway.php:399
 #: includes/class-gateway.php:434 includes/class-gateway.php:435
 #: includes/class-gateway.php:497
 msgid "Payment was declined."
-msgstr ""
+msgstr "El pago fue declinado."
 
 #: includes/class-gateway.php:447 includes/class-gateway.php:448
 msgid "Unexpected payment condition error."
-msgstr ""
+msgstr "Error inesperado en el pago."
 
 #: includes/class-gateway.php:568
 #, php-format
 msgid "Mastercard payment AUTHORIZED (ID: %s, Auth Code: %s)"
-msgstr ""
+msgstr "Mastercard pago AUTORIZADO (ID: %s, Código de Autorización: %s)"
 
 #: includes/class-gateway.php:712
 msgid "Pending payment"
-msgstr ""
+msgstr "Pago pendiente"
 
 #: includes/class-gateway.php:760
 #, php-format
 msgid "Plugin version: %s<br />API version: %s"
-msgstr ""
+msgstr "Versión del Plugin: %sversión del API: %s"
 
 #: includes/class-gateway.php:764
 msgid "Enable/Disable"
-msgstr ""
+msgstr "Habilitar/Deshabilitar"
 
 #: includes/class-gateway.php:765
 msgid "Enable"
-msgstr ""
+msgstr "Habilitar"
 
 #: includes/class-gateway.php:771
 msgid "Title"
-msgstr ""
+msgstr "El título"
 
 #: includes/class-gateway.php:773
 msgid "This controls the title which the user sees during checkout."
-msgstr ""
+msgstr "Esto controla el título que ve el usuario durante el proceso de pago."
 
 #: includes/class-gateway.php:777
 msgid "Description"
-msgstr ""
+msgstr "Descripción"
 
 #: includes/class-gateway.php:779
 msgid "The description displayed when this payment method is selected."
-msgstr ""
+msgstr "La descripción mostrada cuando este método de pago es seleccionado."
 
 #: includes/class-gateway.php:784
 msgid "Gateway"
-msgstr ""
+msgstr "Plataforma de Pagos"
 
 #: includes/class-gateway.php:787
 msgid "Asia Pacific"
-msgstr ""
+msgstr "Asia Pacífico"
 
 #: includes/class-gateway.php:788
 msgid "Europe"
-msgstr ""
+msgstr "Europa"
 
 #: includes/class-gateway.php:789
 msgid "North America"
-msgstr ""
+msgstr "Norte América"
 
 #: includes/class-gateway.php:791
 msgid "Custom URL"
-msgstr ""
+msgstr "URL personalizada"
 
 #: includes/class-gateway.php:796
 msgid "Custom Gateway Host"
-msgstr ""
+msgstr "Host de la plataforma de pagos personalizado"
 
 #: includes/class-gateway.php:798
 msgid ""
 "Enter only the hostname without https prefix. For example na.gateway."
 "mastercard.com."
 msgstr ""
+"Introducir solo el nombre del Host sin el prefijo https. Por ejemplo na."
+"gateway.mastercard.com."
 
 #: includes/class-gateway.php:801
 msgid "Transaction Mode"
-msgstr ""
+msgstr "Modo Transacción"
 
 #: includes/class-gateway.php:804
 msgid "Purchase"
-msgstr ""
+msgstr "Compra"
 
 #: includes/class-gateway.php:805
 msgid "Authorize"
-msgstr ""
+msgstr "Autorizar"
 
 #: includes/class-gateway.php:808
 msgid ""
@@ -145,74 +149,86 @@ msgid ""
 "the transaction is only authorized and the capturing of funds is a manual "
 "process that you do using the Woocommerce admin panel."
 msgstr ""
+"En el modo \"Compra\", se cobra al cliente de forma inmediata. En modo "
+"\"Autorización\", la transacción es solo autorizada y la captura de fondos "
+"(cobro) será un proceso manual que se realiza a través del panel "
+"Administrador de Woocommerce."
 
 #: includes/class-gateway.php:812
 msgid "Integration Model"
-msgstr ""
+msgstr "El modelo de integración"
 
 #: includes/class-gateway.php:815
 msgid "Hosted Checkout"
-msgstr ""
+msgstr "Hosted Checkout"
 
 #: includes/class-gateway.php:816
 msgid "Hosted Session"
-msgstr ""
+msgstr "Hosted Session"
 
 #: includes/class-gateway.php:821
 msgid "3D-Secure"
-msgstr ""
+msgstr "Autenticación 3-D Secure"
 
 #: includes/class-gateway.php:822
 msgid "Use 3D-Secure"
-msgstr ""
+msgstr "Usar Autenticación 3-D Secure"
 
 #: includes/class-gateway.php:824
 msgid "For more information please contact your payment service provider."
 msgstr ""
+"Para obtener más información por favor póngase en contacto con su proveedor "
+"de servicios de pago."
 
 #: includes/class-gateway.php:829
 msgid "Checkout Interaction"
-msgstr ""
+msgstr "Interacción en el Proceso de Compra"
 
 #: includes/class-gateway.php:832
-msgid "Redirect to Payment Page"
-msgstr ""
+msgid "Redirect Payment Page"
+msgstr "Redirigir a la Página de Pago"
 
 #: includes/class-gateway.php:833
 msgid "Lightbox"
-msgstr ""
+msgstr "Lightbox"
 
 #: includes/class-gateway.php:838
 msgid "Saved Cards"
-msgstr ""
+msgstr "Tarjetas guardadas"
 
 #: includes/class-gateway.php:839
 msgid "Enable payment via saved tokenized cards"
-msgstr ""
+msgstr "Habilitar el pago con tarjetas tokenizadas guardadas"
 
 #: includes/class-gateway.php:841
 msgid ""
 "If enabled, users will be able to pay with a saved card during checkout. "
 "Card details are saved in the payment gateway, not on your store."
 msgstr ""
+"Si está habilitado, los usuarios serán capaces de pagar con las tarjetas "
+"guardadas durante el proceso de pago. Los detalles de sus tarjetas serán "
+"guardados en la plataforma de pagos, no en la tienda."
 
 #: includes/class-gateway.php:846
 msgid "Debug Logging"
-msgstr ""
+msgstr "Registro de depuración"
 
 #: includes/class-gateway.php:847
 msgid "Enable Debug Logging"
-msgstr ""
+msgstr "Habilitar el Registro de Depuración"
 
 #: includes/class-gateway.php:849
 msgid ""
 "Logs all communication with Mastercard gateway to file ./wp-content/"
 "mastercard.log. Debug logging only works in Sandbox mode."
 msgstr ""
+"Registra todas las comunicaciones con la plataforma de pagos de Mastercard "
+"en el archivo ./wp-content/mastercard.log. El registro de depuración solo "
+"funciona en modo Sandbox."
 
 #: includes/class-gateway.php:854
 msgid "API credentials"
-msgstr ""
+msgstr "Credenciales API"
 
 #: includes/class-gateway.php:856
 #, php-format
@@ -221,40 +237,41 @@ msgid ""
 "Learn how to access your <a href=\"%s\" target=\"_blank\">Gateway API "
 "Credentials</a>."
 msgstr ""
+"Introduzca las credenciales API para poder procesar los pagos a través de "
+"la Plataforma de Pagos. Aprender como introducir las credenciales <a "
+"href=“%s” target=“_blank”>API de la Plataforma de Pagos</a>."
 
 #: includes/class-gateway.php:861
 msgid "Test Sandbox"
-msgstr ""
+msgstr "Sandbox de pruebas"
 
 #: includes/class-gateway.php:862
-msgid "Enable test sandbox mode"
-msgstr ""
+msgid "Enable test simulator sandbox mode"
+msgstr "Habilitar el modo simulador de pruebas Sandbox"
 
 #: includes/class-gateway.php:864
 msgid ""
 "Place the payment gateway in test mode using test API credentials (real "
 "payments will not be taken)."
 msgstr ""
+"Ponga la plataforma de pago en modo de pruebas utilizando las credenciales "
+"API de pruebas (no se realizarán pagos reales)."
 
 #: includes/class-gateway.php:869
 msgid "Test Merchant ID"
-msgstr ""
+msgstr "ID del Comercio de pruebas"
 
-#: includes/class-gateway.php:871
-msgid "This is your test merchant profile ID prefixed with TEST"
-msgstr ""
-
-#: includes/class-gateway.php:875
+#: includes/class-gateway.php:874
 msgid "Test API Password"
-msgstr ""
+msgstr "Contraseña API de pruebas"
 
-#: includes/class-gateway.php:880
+#: includes/class-gateway.php:879
 msgid "Merchant ID"
-msgstr ""
+msgstr "ID del comercio"
 
-#: includes/class-gateway.php:885
+#: includes/class-gateway.php:884
 msgid "API Password"
-msgstr ""
+msgstr "Contraseña API"
 
 #: includes/class-payment-gateway-cc.php:29
 #: includes/class-payment-gateway-cc.php:68
@@ -263,58 +280,58 @@ msgstr "Código de tarjeta"
 
 #: includes/class-payment-gateway-cc.php:35
 msgid "Card number"
-msgstr ""
+msgstr "Número de tarjeta"
 
 #: includes/class-payment-gateway-cc.php:39
 msgid "Expiry (MM)"
-msgstr ""
+msgstr "Expiración (MM)"
 
 #: includes/class-payment-gateway-cc.php:43
 msgid "Expiry (YY)"
-msgstr ""
+msgstr "Expiración (YY)"
 
 #: templates/3dsecure/form.php:12 templates/3dsecure/form.php:14
 msgid "Processing Secure Payment"
-msgstr ""
+msgstr "Procesando Pago Seguro"
 
 #: templates/3dsecure/form.php:57
 msgid "Click here to continue"
-msgstr ""
+msgstr "Pulse aquí para continuar"
 
 #: templates/checkout/hostedcheckout.php:25
 #: templates/checkout/hostedcheckout.php:27
 #: templates/checkout/hostedsession.php:41
 msgid "Pay"
-msgstr ""
+msgstr "Pagar"
 
 #: templates/checkout/hostedsession.php:65
 msgid "Invalid Card Number"
-msgstr ""
+msgstr "Número de tarjeta inválido"
 
 #: templates/checkout/hostedsession.php:66
 msgid "Invalid Security Code"
-msgstr ""
+msgstr "Código de seguridad inválido"
 
 #: templates/checkout/hostedsession.php:67
 msgid "Invalid Expiry Month"
-msgstr ""
+msgstr "Mes de expiración inválido"
 
 #: templates/checkout/hostedsession.php:68
 msgid "Invalid Expiry Year"
-msgstr ""
+msgstr "Año de expiración inválido"
 
 #: woocommerce-mastercard.php:63
 msgid "Capture payment"
-msgstr ""
+msgstr "Capturar pago"
 
 #: woocommerce-mastercard.php:156
 msgid "Support"
-msgstr ""
+msgstr "Soporte"
 
 #: woocommerce-mastercard.php:157
 msgid "Docs"
-msgstr ""
+msgstr "Documentación"
 
 #: woocommerce-mastercard.php:158
 msgid "Settings"
-msgstr ""
+msgstr "Configuración"
