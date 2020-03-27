@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2019 Mastercard
+ * Copyright (c) 2019-2020 Mastercard
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
 /**
@@ -22,9 +23,9 @@
 ?>
 
 <?php if ( $gateway->use_modal() ): ?>
-    <input type="button" id="mpgs_pay" value="<?php echo __( 'Pay', 'woocommerce' ) ?>" onclick="Checkout.showLightbox();"/>
+    <input type="button" id="mpgs_pay" value="<?php echo __( 'Pay', 'mastercard' ) ?>" onclick="Checkout.showLightbox();"/>
 <?php else: ?>
-    <input type="button" id="mpgs_pay" value="<?php echo __( 'Pay', 'woocommerce' ) ?>" onclick="Checkout.showPaymentPage();"/>
+    <input type="button" id="mpgs_pay" value="<?php echo __( 'Pay', 'mastercard' ) ?>" onclick="Checkout.showPaymentPage();"/>
 <?php endif; ?>
 
 <script async src="<?php echo $gateway->get_hosted_checkout_js() ?>"
@@ -49,6 +50,16 @@
             });
         }
 
+        function waitFor(name, callback) {
+            if (typeof window[name] === "undefined") {
+                setTimeout(function () {
+                    waitFor(name, callback);
+                }, 200);
+            } else {
+                callback();
+            }
+        }
+
         function configureHostedCheckout(sessionData) {
             let config = {
                 merchant: '<?php echo $gateway->get_merchant_id() ?>',
@@ -57,8 +68,11 @@
                     version: sessionData.session.version
                 }
             };
-            Checkout.configure(config);
-            togglePay();
+
+            waitFor('Checkout', function () {
+                Checkout.configure(config);
+                togglePay();
+            });
         }
 
         let xhr = $.ajax({

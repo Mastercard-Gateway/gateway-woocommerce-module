@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2019 Mastercard
+ * Copyright (c) 2019-2020 Mastercard
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,30 +13,49 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-use Http\Discovery\HttpClientDiscovery;
-use Http\Message\MessageFactory\GuzzleMessageFactory;
-use Http\Client\Common\Plugin\AuthenticationPlugin;
-use Http\Message\Authentication\BasicAuth;
-use Http\Client\Common\PluginClient;
-use Http\Message\RequestMatcher\RequestMatcher;
+use Http\Client\Common\Exception\ClientErrorException;
+use Http\Client\Common\Exception\ServerErrorException;
 use Http\Client\Common\HttpClientRouter;
-use Monolog\Logger;
-use Monolog\Handler\StreamHandler;
+use Http\Client\Common\Plugin;
+use Http\Client\Common\Plugin\AuthenticationPlugin;
 use Http\Client\Common\Plugin\ContentLengthPlugin;
 use Http\Client\Common\Plugin\HeaderSetPlugin;
-use Http\Client\Common\Plugin;
+use Http\Client\Common\PluginClient;
+use Http\Client\Exception;
+use Http\Discovery\HttpClientDiscovery;
+use Http\Message\Authentication\BasicAuth;
+use Http\Message\Formatter;
+use Http\Message\Formatter\SimpleFormatter;
+use Http\Message\MessageFactory\GuzzleMessageFactory;
+use Http\Message\RequestMatcher\RequestMatcher;
+use Monolog\Handler\StreamHandler;
+use Monolog\Logger;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
-use Http\Message\Formatter;
-use Http\Message\Formatter\SimpleFormatter;
-use Http\Client\Exception;
-use Http\Client\Common\Exception\ClientErrorException;
-use Http\Client\Common\Exception\ServerErrorException;
 
 class Mastercard_ApiErrorPlugin implements Plugin {
+	/**
+	 * @var LoggerInterface
+	 */
+	private $logger;
+
+	/**
+	 * @var Formatter
+	 */
+	private $formatter;
+
+	/**
+	 * @inheritdoc
+	 */
+	public function __construct( LoggerInterface $logger, Formatter $formatter = null ) {
+		$this->logger    = $logger;
+		$this->formatter = $formatter ?: new SimpleFormatter();
+	}
+
 	/**
 	 * @inheritdoc
 	 */
@@ -68,10 +87,13 @@ class Mastercard_ApiErrorPlugin implements Plugin {
 			if ( isset( $responseData['error']['explanation'] ) ) {
 				$msg .= $responseData['error']['explanation'];
 			}
+
+			$this->logger->error( $msg );
 			throw new ClientErrorException( $msg, $request, $response );
 		}
 
 		if ( $response->getStatusCode() >= 500 && $response->getStatusCode() < 600 ) {
+			$this->logger->error( $response->getReasonPhrase() );
 			throw new ServerErrorException( $response->getReasonPhrase(), $request, $response );
 		}
 
@@ -107,7 +129,8 @@ class Mastercard_ApiLoggerPlugin implements Plugin {
 			$reqBody = $request->getBody();
 		}
 
-		$this->logger->info( sprintf( 'Emit request: "%s"', $this->formatter->formatRequest( $request ) ), [ 'request' => $reqBody ] );
+		$this->logger->info( sprintf( 'Emit request: "%s"', $this->formatter->formatRequest( $request ) ),
+			[ 'request' => $reqBody ] );
 
 		return $next( $request )->then( function ( ResponseInterface $response ) use ( $request ) {
 			$body = @json_decode( $response->getBody(), true );
@@ -115,7 +138,8 @@ class Mastercard_ApiLoggerPlugin implements Plugin {
 				$body = $response->getBody();
 			}
 			$this->logger->info(
-				sprintf( 'Receive response: "%s" for request: "%s"', $this->formatter->formatResponse( $response ), $this->formatter->formatRequest( $request ) ),
+				sprintf( 'Receive response: "%s" for request: "%s"', $this->formatter->formatResponse( $response ),
+					$this->formatter->formatRequest( $request ) ),
 				[
 					'response' => $body,
 				]
@@ -125,7 +149,9 @@ class Mastercard_ApiLoggerPlugin implements Plugin {
 		}, function ( \Exception $exception ) use ( $request ) {
 			if ( $exception instanceof Exception\HttpException ) {
 				$this->logger->error(
-					sprintf( 'Error: "%s" with response: "%s" when emitting request: "%s"', $exception->getMessage(), $this->formatter->formatResponse( $exception->getResponse() ), $this->formatter->formatRequest( $request ) ),
+					sprintf( 'Error: "%s" with response: "%s" when emitting request: "%s"', $exception->getMessage(),
+						$this->formatter->formatResponse( $exception->getResponse() ),
+						$this->formatter->formatRequest( $request ) ),
 					[
 						'request'   => $request,
 						'response'  => $exception->getResponse(),
@@ -134,7 +160,8 @@ class Mastercard_ApiLoggerPlugin implements Plugin {
 				);
 			} else {
 				$this->logger->error(
-					sprintf( 'Error: "%s" when emitting request: "%s"', $exception->getMessage(), $this->formatter->formatRequest( $request ) ),
+					sprintf( 'Error: "%s" when emitting request: "%s"', $exception->getMessage(),
+						$this->formatter->formatRequest( $request ) ),
 					[
 						'request'   => $request,
 						'exception' => $exception,
@@ -181,16 +208,24 @@ class Mastercard_GatewayService {
 	 * @param string $merchantId
 	 * @param string $password
 	 * @param string $webhookUrl
+	 * @param int $loggingLevel
 	 *
 	 * @throws \Exception
 	 */
-	public function __construct( $baseUrl, $apiVersion, $merchantId, $password, $webhookUrl ) {
+	public function __construct(
+		$baseUrl,
+		$apiVersion,
+		$merchantId,
+		$password,
+		$webhookUrl,
+		$loggingLevel = \Monolog\Logger::DEBUG
+	) {
 		$this->webhookUrl = $webhookUrl;
 
 		$logger = new Logger( 'mastercard' );
 		$logger->pushHandler( new StreamHandler(
 			WP_CONTENT_DIR . '/mastercard.log',
-			\Monolog\Logger::DEBUG // @todo: replace default value
+			$loggingLevel
 		) );
 
 		$this->messageFactory = new GuzzleMessageFactory();
@@ -205,7 +240,7 @@ class Mastercard_GatewayService {
 				new ContentLengthPlugin(),
 				new HeaderSetPlugin( [ 'Content-Type' => 'application/json;charset=UTF-8' ] ),
 				new AuthenticationPlugin( new BasicAuth( $username, $password ) ),
-				new Mastercard_ApiErrorPlugin(),
+				new Mastercard_ApiErrorPlugin( $logger ),
 				new Mastercard_ApiLoggerPlugin( $logger ),
 			)
 		);
@@ -315,14 +350,14 @@ class Mastercard_GatewayService {
 	 * without producing duplicates in the database.
 	 * POST https://mtf.gateway.mastercard.com/api/rest/version/50/merchant/{merchantId}/3DSecureId/{3DSecureId}
 	 *
-	 * @param string $threeDSecureId
+	 * @param string $tds_id
 	 * @param string $paRes
 	 *
 	 * @return mixed|ResponseInterface
 	 * @throws Exception
 	 */
-	public function process3dsResult( $threeDSecureId, $paRes ) {
-		$uri = $this->apiUrl . '3DSecureId/' . $threeDSecureId;
+	public function process3dsResult( $tds_id, $paRes ) {
+		$uri = $this->apiUrl . '3DSecureId/' . $tds_id;
 
 		$request = $this->messageFactory->createRequest( 'POST', $uri, array(), json_encode( array(
 			'apiOperation' => 'PROCESS_ACS_RESULT',
@@ -343,20 +378,22 @@ class Mastercard_GatewayService {
 	 *
 	 * @param array $data
 	 * @param array $order
-	 * @param array $session
+	 * @param array|null $session
+	 * @param array|null $source_of_funds
 	 *
 	 * @return mixed|ResponseInterface
 	 * @throws Exception
 	 */
-	public function check3dsEnrollment( $data, $order, $session ) {
-		$threeDSecureId = uniqid( sprintf( '3DS-' ), true );
-		$uri            = $this->apiUrl . '3DSecureId/' . $threeDSecureId;
+	public function check3dsEnrollment( $data, $order, $session = null, $source_of_funds = array() ) {
+		$tds_id = uniqid( sprintf( '3DS-' ), true );
+		$uri    = $this->apiUrl . '3DSecureId/' . $tds_id;
 
 		$request = $this->messageFactory->createRequest( 'PUT', $uri, array(), json_encode( array(
-			'apiOperation' => 'CHECK_3DS_ENROLLMENT',
-			'3DSecure'     => $data,
-			'order'        => $order,
-			'session'      => $session,
+			'apiOperation'  => 'CHECK_3DS_ENROLLMENT',
+			'3DSecure'      => $data,
+			'order'         => $order,
+			'session'       => $session,
+			'sourceOfFunds' => $source_of_funds ?: null,
 		) ) );
 
 		$response = $this->client->sendRequest( $request );
@@ -417,10 +454,11 @@ class Mastercard_GatewayService {
 	 * @param string $txnId
 	 * @param string $orderId
 	 * @param array $order
-	 * @param array $theeDSecure
+	 * @param string|null $tds_id
 	 * @param array $session
 	 * @param array $customer
 	 * @param array $billing
+	 * @param array $token
 	 *
 	 * @return mixed|ResponseInterface
 	 * @throws Exception
@@ -429,25 +467,26 @@ class Mastercard_GatewayService {
 		$txnId,
 		$orderId,
 		$order,
-		$theeDSecure = null,
+		$tds_id = null,
 		$session = array(),
 		$customer = array(),
-		$billing = array()
+		$billing = array(),
+		$token = array()
 	) {
 		$uri = $this->apiUrl . 'order/' . $orderId . '/transaction/' . $txnId;
 
 		$request = $this->messageFactory->createRequest( 'PUT', $uri, array(), json_encode( array(
 			'apiOperation'      => 'AUTHORIZE',
-			'3DSecure'          => $theeDSecure,
+			'3DSecureId'        => $tds_id,
 			'partnerSolutionId' => $this->getSolutionId(),
 			'order'             => array_merge( $order, array(
 				'notificationUrl' => $this->webhookUrl
 			) ),
 			'billing'           => $billing,
 			'customer'          => $customer,
-			'sourceOfFunds'     => array(
+			'sourceOfFunds'     => array_merge( $token, array(
 				'type' => 'CARD'
-			),
+			) ),
 			'session'           => $session,
 		) ) );
 
@@ -471,10 +510,11 @@ class Mastercard_GatewayService {
 	 * @param string $txnId
 	 * @param string $orderId
 	 * @param array $order
-	 * @param array $theeDSecure
+	 * @param string|null $tds_id
 	 * @param array $session
 	 * @param array $customer
 	 * @param array $billing
+	 * @param array $token
 	 *
 	 * @return mixed|ResponseInterface
 	 * @throws Exception
@@ -483,25 +523,26 @@ class Mastercard_GatewayService {
 		$txnId,
 		$orderId,
 		$order = array(),
-		$theeDSecure = null,
+		$tds_id = null,
 		$session = array(),
 		$customer = array(),
-		$billing = array()
+		$billing = array(),
+		$token = array()
 	) {
 		$uri = $this->apiUrl . 'order/' . $orderId . '/transaction/' . $txnId;
 
 		$request = $this->messageFactory->createRequest( 'PUT', $uri, array(), json_encode( array(
 			'apiOperation'      => 'PAY',
-			'3DSecure'          => $theeDSecure,
+			'3DSecureId'        => $tds_id,
 			'partnerSolutionId' => $this->getSolutionId(),
 			'order'             => array_merge( $order, array(
 				'notificationUrl' => $this->webhookUrl
 			) ),
 			'billing'           => $billing,
 			'customer'          => $customer,
-			'sourceOfFunds'     => array(
+			'sourceOfFunds'     => array_merge( $token, array(
 				'type' => 'CARD'
-			),
+			) ),
 			'session'           => $session,
 		) ) );
 
@@ -730,6 +771,34 @@ class Mastercard_GatewayService {
 		$request  = $this->messageFactory->createRequest( 'GET', $uri );
 		$response = $this->client->sendRequest( $request );
 
+		$response = json_decode( $response->getBody(), true );
+
+		return $response;
+	}
+
+	/**
+	 * Request for the gateway to store payment instrument (e.g. credit or debit cards, gift cards,
+	 * ACH bank account details) against a token, where the system generates the token id.
+	 * https://eu-gateway.mastercard.com/api/rest/version/54/merchant/{merchantId}/token
+	 *
+	 * @param string $session_id
+	 *
+	 * @return mixed|ResponseInterface
+	 * @throws Exception
+	 */
+	public function createCardToken( $session_id ) {
+		$uri = $this->apiUrl . 'token';
+
+		$request = $this->messageFactory->createRequest( 'POST', $uri, array(), json_encode( array(
+			'session'       => array(
+				'id' => $session_id
+			),
+			'sourceOfFunds' => array(
+				'type' => 'CARD'
+			)
+		) ) );
+
+		$response = $this->client->sendRequest( $request );
 		$response = json_decode( $response->getBody(), true );
 
 		return $response;

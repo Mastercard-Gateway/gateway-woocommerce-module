@@ -5,11 +5,11 @@
  * Plugin URI: https://github.com/Mastercard-Gateway/gateway-woocommerce-module/
  * Author: OnTap Networks Ltd.
  * Author URI: https://www.ontapgroup.com/
- * Version: 1.0.0
+ * Version: 1.1.0
  */
 
 /**
- * Copyright (c) 2019 Mastercard
+ * Copyright (c) 2019-2020 Mastercard
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -53,14 +54,14 @@ class WC_Mastercard {
 		require_once plugin_basename( '/vendor/autoload.php' );
 		require_once plugin_basename( '/includes/class-gateway.php' );
 
-		load_plugin_textdomain( 'mastercard', false, trailingslashit( dirname( plugin_basename( __FILE__ ) ) ) );
+		load_plugin_textdomain( 'mastercard', false, trailingslashit( dirname( plugin_basename( __FILE__ ) ) ) . 'i18n/' );
 
 		add_filter( 'woocommerce_order_actions', function ( $actions ) {
 			$order = new WC_Order( $_REQUEST['post'] );
 			if ( $order->get_payment_method() == Mastercard_Gateway::ID ) {
 				if ( ! $order->get_meta( '_mpgs_order_captured' ) ) {
 					if ( $order->get_status() == 'processing' ) {
-						$actions['mpgs_capture_order'] = __( 'Capture payment', 'woocommerce' );
+						$actions['mpgs_capture_order'] = __( 'Capture payment', 'mastercard' );
 					}
 				}
 			}

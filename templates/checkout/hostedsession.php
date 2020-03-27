@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2019 Mastercard
+ * Copyright (c) 2019-2020 Mastercard
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,43 +13,24 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
 /**
  * @var Mastercard_Gateway $gateway
  * @var WC_Abstract_Order $order
+ * @var WC_Payment_Gateway_CC $cc_form
  */
 ?>
-
 <script src="<?php echo $gateway->get_hosted_session_js() ?>"></script>
 
 <style id="antiClickjack">body{display:none !important;}</style>
 
-<form class="mpgs_hostedsession" action="<?php echo $gateway->get_payment_return_url( $order->get_id() ) ?>" method="post">
-    <p class="form-row form-row-wide">
-        <label for="card-number"><?php echo __( 'Card Number', 'woocommerce' ) ?></label>
-        <span class="woocommerce-input-wrapper">
-            <input type="text" class="input-text" id="card-number" maxlength="19" title="<?php echo __( 'card number', 'woocommerce' ) ?>" aria-label="<?php echo __( 'enter your card number', 'woocommerce' ) ?>" value="" tabindex="1" readonly />
-        </span>
-    </p>
-    <p class="form-row form-row-first">
-        <label for="expiry-month"><?php echo __( 'Month', 'woocommerce' ) ?></label>
-        <span class="woocommerce-input-wrapper">
-            <input type="text" class="input-text" id="expiry-month" maxlength="2" title="<?php echo __( 'expiry month', 'woocommerce' ) ?>" aria-label="<?php echo __( 'two digit expiry month', 'woocommerce' ) ?>" value="" tabindex="2" readonly>
-        </span>
-    </p>
-    <p class="form-row form-row-last">
-        <label for="expiry-year"><?php echo __( 'Year', 'woocommerce' ) ?></label>
-        <span class="woocommerce-input-wrapper">
-            <input type="text" class="input-text" id="expiry-year" maxlength="2" title="<?php echo __( 'expiry year', 'woocommerce' ) ?>" aria-label="<?php echo __( 'two digit expiry year', 'woocommerce' ) ?>" value="" tabindex="3" readonly>
-        </span>
-    </p>
-    <p class="form-row form-row-wide">
-        <label for="security-code"><?php echo __( 'CVV', 'woocommerce' ) ?></label>
-        <span class="woocommerce-input-wrapper">
-            <input type="text" id="security-code" class="input-field" maxlength="4" title="<?php echo __( 'security code', 'woocommerce' ) ?>" aria-label="<?php echo __( 'three digit CCV security code', 'woocommerce' ) ?>" value="" tabindex="4" readonly>
-        </span>
-    </p>
+<form class="mpgs_hostedsession wc-payment-form" action="<?php echo $gateway->get_payment_return_url( $order->get_id() ) ?>" method="post">
+
+    <div class="payment_box">
+        <?php $cc_form->payment_fields(); ?>
+    </div>
 
     <input type="hidden" name="session_id" value="" />
     <input type="hidden" name="session_version" value="" />
@@ -58,7 +39,7 @@
     <div id="hostedsession_errors" style="color: red; display: none;" class="errors"></div>
 
     <p class="form-row form-row-wide">
-        <button type="button" id="mpgs_pay" disabled="disabled" onclick="PaymentSession.updateSessionFromForm('card');"><?php echo __( 'Pay', 'woocommerce' ) ?></button>
+        <button type="button" id="mpgs_pay" onclick="mpgsPayWithSelectedInstrument()"><?php echo __( 'Pay', 'mastercard' ) ?></button>
     </p>
 </form>
 
@@ -72,11 +53,11 @@
 
     function hsFieldMap() {
         return {
-            cardNumber: "#card-number",
-            number: "#card-number",
-            securityCode: "#security-code",
-            expiryMonth: "#expiry-month",
-            expiryYear: "#expiry-year"
+            cardNumber: "#mpgs_gateway-card-number",
+            number: "#mpgs_gateway-card-number",
+            securityCode: "#mpgs_gateway-card-cvc",
+            expiryMonth: "#mpgs_gateway-card-expiry-month",
+            expiryYear: "#mpgs_gateway-card-expiry-year"
         };
     }
 
@@ -103,73 +84,163 @@
         document.querySelector('form.mpgs_hostedsession').submit();
     }
 
+    function mpgsPayWithSelectedInstrument() {
+        var selected = document.querySelectorAll('[name=wc-mpgs_gateway-payment-token]:checked')[0];
+        if (selected === undefined) {
+            // Options not displayed at all
+            PaymentSession.updateSessionFromForm('card', undefined, 'new');
+        } else if (selected.value === 'new') {
+            // New card options was selected
+            PaymentSession.updateSessionFromForm('card', undefined, 'new');
+        } else {
+            // Token
+            PaymentSession.updateSessionFromForm('card', undefined, selected.value);
+        }
+    }
+
     (function ($) {
-        function togglePay() {
-            $('#mpgs_pay').prop('disabled', function (i, v) {
-                return !v;
+        $(':input.woocommerce-SavedPaymentMethods-tokenInput').on('change', function () {
+            $('.token-cvc').hide();
+            $('#token-cvc-' + $(this).val()).show();
+        });
+
+        var paymentSessionLoaded = {};
+
+        var tokenChoices = $('[name=wc-mpgs_gateway-payment-token]');
+        if (tokenChoices.length > 1) {
+            tokenChoices.on('change', function () {
+                var errorsContainer = document.getElementById('hostedsession_errors');
+                errorsContainer.style.display = 'none';
+
+                var selectedPayment = $('[name=wc-mpgs_gateway-payment-token]:checked').val();
+                if ('new' === selectedPayment) {
+                    initializeNewPaymentSession();
+                } else {
+                    initializeTokenPaymentSession(selectedPayment);
+                }
             });
+        } else {
+            initializeNewPaymentSession();
         }
 
-        PaymentSession.configure({
-            fields: {
-                card: hsFieldMap()
-            },
-            frameEmbeddingMitigation: ["javascript"],
-            callbacks: {
-                initialized: function(response) {
-                    togglePay();
+        // function togglePay() {
+        //     $('#mpgs_pay').prop('disabled', function (i, v) {
+        //         return !v;
+        //     });
+        // }
+
+        function initializeTokenPaymentSession(id) {
+            if (paymentSessionLoaded[id] === true) {
+                return;
+            }
+
+            var config = {
+                fields: {
+                    card: {
+                        securityCode: '#mpgs_gateway-saved-card-cvc-' + id
+                    }
                 },
-                formSessionUpdate: function(response) {
-                    var fields = hsFieldMap();
-                    for (var field in fields) {
-                        var input = document.getElementById(fields[field].substr(1));
-                        input.style['border-color'] = 'inherit';
-                    }
+                frameEmbeddingMitigation: ["javascript"],
+                callbacks: {
+                    formSessionUpdate: function (response) {
+                        var errorsContainer = document.getElementById('hostedsession_errors');
+                        errorsContainer.innerText = '';
+                        errorsContainer.style.display = 'none';
 
-                    var errorsContainer = document.getElementById('hostedsession_errors');
-                    errorsContainer.innerText = '';
-                    errorsContainer.style.display = 'none';
-
-                    if (!response.status) {
-                        errorsContainer.innerText = hsLoadingFailedMsg + ' (invalid response)';
-                        errorsContainer.style.display = 'block';
-                        return;
-                    }
-
-                    if (response.status === "fields_in_error") {
-                        if (response.errors) {
-                            var errors = hsErrorsMap(),
-                                message = "";
-                            for (var field in response.errors) {
-                                if (!response.errors.hasOwnProperty(field)) {
-                                    continue;
-                                }
-
-                                var input = document.getElementById(fields[field].substr(1));
-                                input.style['border-color'] = 'red';
-
-                                message += errors[field] + "\n";
+                        if (!response.status) {
+                            errorsContainer.innerText = hsLoadingFailedMsg + ' (invalid response)';
+                            errorsContainer.style.display = 'block';
+                            return;
+                        }
+                        if (response.status === "ok") {
+                            if (is3DsEnabled()) {
+                                document.querySelector('form.mpgs_hostedsession > input[name=check_3ds_enrollment]').value = '1';
                             }
-                            errorsContainer.innerText = message;
+                            placeOrder(response);
+                        } else {
+                            errorsContainer.innerText = hsLoadingFailedMsg + ' (unexpected status: ' + response.status + ')';
                             errorsContainer.style.display = 'block';
                         }
-                    }  else if (response.status === "ok") {
-                        if (is3DsEnabled()) {
-                            document.querySelector('form.mpgs_hostedsession > input[name=check_3ds_enrollment]').value = '1';
-                        }
-                        placeOrder(response);
-                    } else {
-                        errorsContainer.innerText = hsLoadingFailedMsg + ' (unexpected status: '+response.status+')';
-                        errorsContainer.style.display = 'block';
+                    }
+                },
+                interaction: {
+                    displayControl: {
+                        invalidFieldCharacters: 'REJECT',
+                        formatCard: 'EMBOSSED'
                     }
                 }
-            },
-            interaction: {
-                displayControl: {
-                    invalidFieldCharacters: 'REJECT',
-                    formatCard: 'EMBOSSED'
-                }
+            };
+
+            PaymentSession.configure(config, id);
+            paymentSessionLoaded[id] = true;
+        }
+
+        function initializeNewPaymentSession() {
+            if (paymentSessionLoaded['new'] === true) {
+                return;
             }
-        });
+
+            var config = {
+                fields: {
+                    card: hsFieldMap()
+                },
+                frameEmbeddingMitigation: ["javascript"],
+                callbacks: {
+                    formSessionUpdate: function (response) {
+                        var fields = hsFieldMap();
+                        for (var field in fields) {
+                            var input = document.getElementById(fields[field].substr(1));
+                            input.style['border-color'] = 'inherit';
+                        }
+
+                        var errorsContainer = document.getElementById('hostedsession_errors');
+                        errorsContainer.innerText = '';
+                        errorsContainer.style.display = 'none';
+
+                        if (!response.status) {
+                            errorsContainer.innerText = hsLoadingFailedMsg + ' (invalid response)';
+                            errorsContainer.style.display = 'block';
+                            return;
+                        }
+
+                        if (response.status === "fields_in_error") {
+                            if (response.errors) {
+                                var errors = hsErrorsMap(),
+                                    message = "";
+                                for (var field in response.errors) {
+                                    if (!response.errors.hasOwnProperty(field)) {
+                                        continue;
+                                    }
+
+                                    var input = document.getElementById(fields[field].substr(1));
+                                    input.style['border-color'] = 'red';
+
+                                    message += errors[field] + "\n";
+                                }
+                                errorsContainer.innerText = message;
+                                errorsContainer.style.display = 'block';
+                            }
+                        } else if (response.status === "ok") {
+                            if (is3DsEnabled()) {
+                                document.querySelector('form.mpgs_hostedsession > input[name=check_3ds_enrollment]').value = '1';
+                            }
+                            placeOrder(response);
+                        } else {
+                            errorsContainer.innerText = hsLoadingFailedMsg + ' (unexpected status: ' + response.status + ')';
+                            errorsContainer.style.display = 'block';
+                        }
+                    }
+                },
+                interaction: {
+                    displayControl: {
+                        invalidFieldCharacters: 'REJECT',
+                        formatCard: 'EMBOSSED'
+                    }
+                }
+            };
+
+            PaymentSession.configure(config, 'new');
+            paymentSessionLoaded['new'] = true;
+        }
     })(jQuery);
 </script>
