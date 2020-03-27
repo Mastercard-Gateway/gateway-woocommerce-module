@@ -11,7 +11,13 @@ The module has been tested with the WordPress version:
 and with PHP versions:
 - 7.2
 - 7.3
-
+## Customer Information Shared with Gateway
+### This module shares the following customer information with the gateway:
+- Customer Billing Address
+- Customer Name
+- Customer Phone Number
+- Customer Email Address
+- Cart Line Items (optional)
 ## Obtain the module
 You can obtain the module by downloading a release from: https://github.com/Mastercard-Gateway/gateway-woocommerce-module/releases
 ## Installation of Module
@@ -60,14 +66,15 @@ Once you have installed the MasterCard Payment Gateway Services module, you can 
     - **Checkout Interaction** - This option is available when the 'Payment Model' option is set to 'Hosted Checkout' and allows to choose redirection behavior to the payment gateway. Either in the "Lightbox" or "Redirect Payment Page".
     - **3D-Secure** - This option is available when the 'Payment Model' option is set to 'Hosted Session'. Tick the checkbox of "Use 3D-Secure" to Enable it. Be sure to Enable 3D-Secure in your Mastercard account. Un-tick it to Disable it. Hosted Checkout will present 3D-Secure authentication when configured by your payment service provider.
     - **Saved Cards** - This option is available when the 'Payment Model' option is set to 'Hosted Session'. Tick the checkbox of "Enable Payment via Saved Cards" to Enable it. If enabled, payer will be able to pay with a previously saved card during checkout. Card details are saved on payment gateway, not on your store. Un-tick it to Disable it.
-    - **Debug Logging** - Tick the checkbox of "Enable Debug Logging" to Enable it. If enabled, Logs all communication with Mastercard gateway to file ./wp-content/mastercard.log. Debug logging only works in Sandbox mode. Un-tick it to Disable it. If disabled, it will not log any.
+    - **Debug Logging** - When ticked, the file ./wp-content/mastercard.log will include additional logging including all communication with the gateway. Debug logging is only available in test sandbox mode.
     - **Test Sandbox** - Tick the checkbox of "Enable Sandbox Mode" to Enable it. If enabled, it places the payment gateway in test mode using test API credentials (real payments will not be taken). Un-tick it to Disable it. If disabled, it will take the real payments.
     - **Merchant ID** - Insert your account Merchant ID. Gateway Merchant Administrator: Admin > Integration Settings.
     - **API Password** - Insert your API Password. Gateway Merchant Administrator: Admin > Integration Settings.
 ---
-## Capture an Order.
+## Capture an Order
 ### Steps to process a capture transaction on an order
 1. Edit the order in the admin. Path: Admin >  WooCommerce > Orders > Edit Order 
 2. On the right side of the order, you can open a dropdown menu and select "Capture Payment". Ensure the order is authorized, (see Order Notes, right side of the order page), otherwise an already captured order will not have the "capture" option.
 ![](images/8.png)
 3. After selecting "Capture Payment" as option, click the "Update" button to capture funds for this order.
+---
