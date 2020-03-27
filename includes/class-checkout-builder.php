@@ -81,7 +81,7 @@ class Mastercard_CheckoutBuilder {
 		return array(
 			'email'     => $this->order->get_billing_email(),
 			'firstName' => self::safe($this->order->get_billing_first_name(), 50),
-			'lastName'  => self::safe($this->order->get_shipping_last_name(), 50),
+			'lastName'  => self::safe($this->order->get_billing_last_name(), 50),
 		);
 	}
 
