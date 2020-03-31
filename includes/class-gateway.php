@@ -479,6 +479,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 					$session,
 					$order_builder->getCustomer(),
 					$order_builder->getBilling(),
+					$order_builder->getShipping(),
 					$this->get_token_from_request()
 				);
 			} else {
@@ -490,6 +491,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 					$session,
 					$order_builder->getCustomer(),
 					$order_builder->getBilling(),
+					$order_builder->getShipping(),
 					$this->get_token_from_request()
 				);
 			}
@@ -669,7 +671,8 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 					$order_builder->getHostedCheckoutOrder(),
 					$order_builder->getInteraction( $this->capture, $returnUrl ),
 					$order_builder->getCustomer(),
-					$order_builder->getBilling()
+					$order_builder->getBilling(),
+					$order_builder->getShipping()
 				);
 
 				if ( $order->meta_exists( '_mpgs_success_indicator' ) ) {

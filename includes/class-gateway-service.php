@@ -413,6 +413,7 @@ class Mastercard_GatewayService {
 	 * @param array $interaction
 	 * @param array $customer
 	 * @param array $billing
+	 * @param array $shipping
 	 *
 	 * @return array
 	 * @throws Exception
@@ -422,7 +423,8 @@ class Mastercard_GatewayService {
 		$order = array(),
 		$interaction = array(),
 		$customer = array(),
-		$billing = array()
+		$billing = array(),
+		$shipping = array()
 	) {
 		$uri = $this->apiUrl . 'session';
 
@@ -433,6 +435,7 @@ class Mastercard_GatewayService {
 				'notificationUrl' => $this->webhookUrl
 			) ),
 			'billing'           => $billing,
+			'shipping'          => $shipping,
 			'interaction'       => $interaction,
 			'customer'          => $customer,
 		) ) );
@@ -458,6 +461,7 @@ class Mastercard_GatewayService {
 	 * @param array $session
 	 * @param array $customer
 	 * @param array $billing
+	 * @param array $shipping
 	 * @param array $token
 	 *
 	 * @return mixed|ResponseInterface
@@ -471,6 +475,7 @@ class Mastercard_GatewayService {
 		$session = array(),
 		$customer = array(),
 		$billing = array(),
+		$shipping = array(),
 		$token = array()
 	) {
 		$uri = $this->apiUrl . 'order/' . $orderId . '/transaction/' . $txnId;
@@ -483,6 +488,7 @@ class Mastercard_GatewayService {
 				'notificationUrl' => $this->webhookUrl
 			) ),
 			'billing'           => $billing,
+			'shipping'          => $shipping,
 			'customer'          => $customer,
 			'sourceOfFunds'     => array_merge( $token, array(
 				'type' => 'CARD'
@@ -514,6 +520,7 @@ class Mastercard_GatewayService {
 	 * @param array $session
 	 * @param array $customer
 	 * @param array $billing
+	 * @param array $shipping
 	 * @param array $token
 	 *
 	 * @return mixed|ResponseInterface
@@ -527,6 +534,7 @@ class Mastercard_GatewayService {
 		$session = array(),
 		$customer = array(),
 		$billing = array(),
+		$shipping = array(),
 		$token = array()
 	) {
 		$uri = $this->apiUrl . 'order/' . $orderId . '/transaction/' . $txnId;
@@ -539,6 +547,7 @@ class Mastercard_GatewayService {
 				'notificationUrl' => $this->webhookUrl
 			) ),
 			'billing'           => $billing,
+			'shipping'          => $shipping,
 			'customer'          => $customer,
 			'sourceOfFunds'     => array_merge( $token, array(
 				'type' => 'CARD'
