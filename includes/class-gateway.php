@@ -799,7 +799,8 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			'custom_gateway_url' => array(
 				'title'       => __( 'Custom Gateway Host', 'mastercard' ),
 				'type'        => 'text',
-				'description' => __( 'Enter only the hostname without https prefix. For example na.gateway.mastercard.com.' )
+				'description' => __( 'Enter only the hostname without https prefix. For example na.gateway.mastercard.com.',
+					'mastercard' )
 			),
 			'txn_mode'           => array(
 				'title'       => __( 'Transaction Mode', 'mastercard' ),
@@ -872,7 +873,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			'sandbox_username'   => array(
 				'title'       => __( 'Test Merchant ID', 'mastercard' ),
 				'type'        => 'text',
-				'description' => __( 'This is your test merchant profile ID prefixed with TEST' ),
+				'description' => __( 'This is your test merchant profile ID prefixed with TEST', 'mastercard' ),
 				'default'     => '',
 			),
 			'sandbox_password'   => array(
