@@ -75,6 +75,47 @@ class Mastercard_CheckoutBuilder {
 	}
 
 	/**
+	 * @param WC_Order $order
+	 * @return bool
+	 */
+	public function orderIsVirtual($order) {
+		if (empty($this->order->get_shipping_address_1())) {
+			return true;
+		}
+
+		if (empty($this->order->get_shipping_first_name())) {
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * @return array|null
+	 */
+	public function getShipping() {
+
+		if ($this->orderIsVirtual($this->order)) {
+			return null;
+		}
+
+		return array(
+			'address' => array(
+				'street'        => self::safe( $this->order->get_shipping_address_1(), 100 ),
+				'street2'       => self::safe( $this->order->get_shipping_address_2(), 100 ),
+				'city'          => self::safe( $this->order->get_shipping_city(), 100 ),
+				'postcodeZip'   => self::safe( $this->order->get_shipping_postcode(), 10 ),
+				'country'       => $this->iso2ToIso3( $this->order->get_shipping_country() ),
+				'stateProvince' => self::safe( $this->order->get_shipping_state(), 20 )
+			),
+			'contact' => array(
+				'firstName' => self::safe($this->order->get_shipping_first_name(), 50),
+				'lastName'  => self::safe($this->order->get_shipping_last_name(), 50),
+			),
+		);
+	}
+
+	/**
 	 * @return array
 	 */
 	public function getCustomer() {
