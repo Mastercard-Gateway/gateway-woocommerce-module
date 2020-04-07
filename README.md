@@ -13,7 +13,7 @@ and with PHP versions:
 - 7.3
 ## Customer Information Shared with Gateway
 ### This module shares the following customer information with the gateway:
-- Customer Billing Address
+- Customer Billing and Shipping Address
 - Customer Name
 - Customer Phone Number
 - Customer Email Address
