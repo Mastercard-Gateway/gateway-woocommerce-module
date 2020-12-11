@@ -44,6 +44,10 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	const TXN_MODE_PURCHASE = 'capture';
 	const TXN_MODE_AUTH_CAPTURE = 'authorize';
 
+	const THREED_DISABLED = '0';
+	const THREED_V1 = 'yes'; // Backward compatibility with checkbox value
+	const THREED_V2 = '2';
+
 	/**
 	 * @var bool
 	 */
@@ -87,7 +91,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	/**
 	 * @var bool
 	 */
-	protected $threedsecure;
+	protected $threedsecure_v1;
 
 	/**
 	 * @var bool
@@ -115,7 +119,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		$this->hc_type      = $this->get_option( 'hc_type', self::HC_TYPE_MODAL );
 		$this->capture      = $this->get_option( 'txn_mode',
 			self::TXN_MODE_PURCHASE ) == self::TXN_MODE_PURCHASE ? true : false;
-		$this->threedsecure = $this->get_option( 'threedsecure', 'yes' ) == 'yes' ? true : false;
+		$this->threedsecure_v1 = $this->get_option( 'threedsecure', 'yes' ) == 'yes' ? true : false;
 		$this->method       = $this->get_option( 'method', self::HOSTED_CHECKOUT );
 		$this->saved_cards  = $this->get_option( 'saved_cards', 'yes' ) == 'yes' ? true : false;
 		$this->supports     = array(
@@ -441,7 +445,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			$this->pay( $session, $order, $tds_id );
 		}
 
-		if ( ! $check_3ds && ! $process_acl_result && ! $this->threedsecure ) {
+		if ( ! $check_3ds && ! $process_acl_result && ! $this->threedsecure_v1 ) {
 			$this->pay( $session, $order );
 		}
 
@@ -615,8 +619,8 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	/**
 	 * @return bool
 	 */
-	public function use_3dsecure() {
-		return $this->threedsecure;
+	public function use_3dsecure_v1() {
+		return $this->threedsecure_v1;
 	}
 
 	/**
@@ -825,10 +829,15 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			'threedsecure'       => array(
 				'title'       => __( '3D-Secure', 'mastercard' ),
 				'label'       => __( 'Use 3D-Secure', 'mastercard' ),
-				'type'        => 'checkbox',
+				'type'        => 'select',
+				'options'     => array(
+					self::THREED_DISABLED => __('Disabled'),
+					self::THREED_V1 => __('3DS1'),
+					self::THREED_V2 => __('3DS2'),
+				),
+				'default'     => self::THREED_DISABLED,
 				'description' => __( 'For more information please contact your payment service provider.',
 					'mastercard' ),
-				'default'     => 'yes',
 			),
 			'hc_type'            => array(
 				'title'   => __( 'Checkout Interaction', 'mastercard' ),

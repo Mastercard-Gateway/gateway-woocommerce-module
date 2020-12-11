@@ -70,8 +70,8 @@
         };
     }
 
-    function is3DsEnabled() {
-        <?php if ($gateway->use_3dsecure()): ?>
+    function is3DsV1Enabled() {
+        <?php if ($gateway->use_3dsecure_v1()): ?>
             return true;
         <?php else: ?>
             return false;
@@ -153,7 +153,7 @@
                             return;
                         }
                         if (response.status === "ok") {
-                            if (is3DsEnabled()) {
+                            if (is3DsV1Enabled()) {
                                 document.querySelector('form.mpgs_hostedsession > input[name=check_3ds_enrollment]').value = '1';
                             }
                             placeOrder(response);
@@ -221,7 +221,7 @@
                                 errorsContainer.style.display = 'block';
                             }
                         } else if (response.status === "ok") {
-                            if (is3DsEnabled()) {
+                            if (is3DsV1Enabled()) {
                                 document.querySelector('form.mpgs_hostedsession > input[name=check_3ds_enrollment]').value = '1';
                             }
                             placeOrder(response);
