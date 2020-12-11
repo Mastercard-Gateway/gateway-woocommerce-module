@@ -16,7 +16,7 @@
  *
  */
 
-define( 'MPGS_MODULE_VERSION', '1.1.0' );
+define( 'MPGS_MODULE_VERSION', '1.2.0' );
 
 require_once dirname( __FILE__ ) . '/class-checkout-builder.php';
 require_once dirname( __FILE__ ) . '/class-gateway-service.php';
@@ -26,8 +26,8 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 
 	const ID = 'mpgs_gateway';
 
-	const MPGS_API_VERSION = 'version/54';
-	const MPGS_API_VERSION_NUM = '54';
+	const MPGS_API_VERSION = 'version/58';
+	const MPGS_API_VERSION_NUM = '58';
 
 	const HOSTED_SESSION = 'hostedsession';
 	const HOSTED_CHECKOUT = 'hostedcheckout';
