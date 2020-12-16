@@ -24,7 +24,13 @@
 ?>
 <script src="<?php echo $gateway->get_hosted_session_js() ?>"></script>
 
+<?php if ($gateway->use_3dsecure_v1() || $gateway->use_3dsecure_v2()): ?>
+<?php /* @todo: Add URL as param https://mtf.gateway.mastercard.com/ */?>
+<script src="https://mtf.gateway.mastercard.com/static/threeDS/1.3.0/three-ds.min.js"></script>
+<?php endif; ?>
+
 <style id="antiClickjack">body{display:none !important;}</style>
+<div id="3DSUI"></div>
 
 <form class="mpgs_hostedsession wc-payment-form" action="<?php echo $gateway->get_payment_return_url( $order->get_id() ) ?>" method="post">
 
@@ -70,20 +76,6 @@
         };
     }
 
-    function is3DsV1Enabled() {
-        <?php if ($gateway->use_3dsecure_v1()): ?>
-            return true;
-        <?php else: ?>
-            return false;
-        <?php endif; ?>
-    }
-
-    function placeOrder(data) {
-        document.querySelector('form.mpgs_hostedsession > input[name=session_id]').value = data.session.id;
-        document.querySelector('form.mpgs_hostedsession > input[name=session_version]').value = data.session.version;
-        document.querySelector('form.mpgs_hostedsession').submit();
-    }
-
     function mpgsPayWithSelectedInstrument() {
         var selected = document.querySelectorAll('[name=wc-mpgs_gateway-payment-token]:checked')[0];
         if (selected === undefined) {
@@ -99,42 +91,133 @@
     }
 
     (function ($) {
+        var paymentSessionLoaded = {};
+
         $(':input.woocommerce-SavedPaymentMethods-tokenInput').on('change', function () {
             $('.token-cvc').hide();
             $('#token-cvc-' + $(this).val()).show();
         });
 
-        var paymentSessionLoaded = {};
-
-        var tokenChoices = $('[name=wc-mpgs_gateway-payment-token]');
-        if (tokenChoices.length > 1) {
-            tokenChoices.on('change', function () {
-                var errorsContainer = document.getElementById('hostedsession_errors');
-                errorsContainer.style.display = 'none';
-
-                var selectedPayment = $('[name=wc-mpgs_gateway-payment-token]:checked').val();
-                if ('new' === selectedPayment) {
-                    initializeNewPaymentSession();
-                } else {
-                    initializeTokenPaymentSession(selectedPayment);
+        $.when(createSession()).done(function (response) {
+            ThreeDS.configure({
+                merchantId: '<?php echo $gateway->get_merchant_id() ?>',
+                sessionId: response.session.id,
+                containerId: "3DSUI",
+                callback: function () {
+                },
+                configuration: {
+                    wsVersion: <?php echo $gateway->get_api_version() ?>
                 }
             });
-        } else {
-            initializeNewPaymentSession();
+
+            var tokenChoices = $('[name=wc-mpgs_gateway-payment-token]');
+            if (tokenChoices.length > 1) {
+                tokenChoices.on('change', function () {
+                    var errorsContainer = document.getElementById('hostedsession_errors');
+                    errorsContainer.style.display = 'none';
+
+                    var selectedPayment = $('[name=wc-mpgs_gateway-payment-token]:checked').val();
+                    if ('new' === selectedPayment) {
+                        initializeNewPaymentSession(response.session.id);
+                    } else {
+                        initializeTokenPaymentSession(response.session.id, selectedPayment);
+                    }
+                });
+            } else {
+                initializeNewPaymentSession(response.session.id);
+            }
+        })
+        .fail(console.error);
+
+        function is3DsV1Enabled() {
+		    <?php if ($gateway->use_3dsecure_v1()): ?>
+            return true;
+		    <?php else: ?>
+            return false;
+		    <?php endif; ?>
         }
 
-        // function togglePay() {
-        //     $('#mpgs_pay').prop('disabled', function (i, v) {
-        //         return !v;
-        //     });
-        // }
+        function is3DsV2Enabled() {
+		    <?php if ($gateway->use_3dsecure_v2()): ?>
+            return true;
+		    <?php else: ?>
+            return false;
+		    <?php endif; ?>
+        }
 
-        function initializeTokenPaymentSession(id) {
+        function initiateAuthentication() {
+            var txnId = '3DS-' + new Date().getTime().toString();
+
+            ThreeDS.initiateAuthentication(
+                '<?php echo $order->get_id() ?>',
+                txnId,
+                function (data) {
+                    authenticatePayer(txnId, data);
+                }
+            );
+        }
+
+        function displayChallengeAuth(data) {
+            if (!data.error) {
+                switch (data.gatewayRecommendation) {
+                    case 'PROCEED':
+                        document.documentElement.innerHTML = data.htmlRedirectCode;
+                        break;
+                    case "DO_NOT_PROCEED":
+                        alert("{{ error_payment_declined_3ds }}");
+                        break;
+                }
+            } else {
+                console.error(data.error);
+            }
+        }
+
+        function authenticatePayer(txnId, data) {
+            if (data && data.error) {
+                var error = data.error;
+
+                //Something bad happened, the error value will match what is returned by the Authentication API
+                console.error("error.code : ", error.code);
+                console.error("error.msg : ", error.msg);
+                console.error("error.result : ", error.result);
+                console.error("error.status : ", error.status);
+                console.error(error);
+            } else {
+                switch (data.gatewayRecommendation) {
+                    case "PROCEED":
+                        ThreeDS.authenticatePayer(
+                            '<?php echo $order->get_id() ?>',
+                            txnId,
+                            displayChallengeAuth,
+                            {
+                                fullScreenRedirect: true
+                            }
+                        );
+                        break;
+                    case "DO_NOT_PROCEED":
+                        alert("{{ error_payment_declined_3ds }}");
+                        break;
+                }
+            }
+        }
+
+        function placeOrder(response) {
+            if (is3DsV2Enabled()) {
+                initiateAuthentication();
+            } else {
+                document.querySelector('form.mpgs_hostedsession > input[name=session_id]').value = response.session.id;
+                document.querySelector('form.mpgs_hostedsession > input[name=session_version]').value = response.session.version;
+                document.querySelector('form.mpgs_hostedsession').submit();
+            }
+        }
+
+        function initializeTokenPaymentSession(session_id, id) {
             if (paymentSessionLoaded[id] === true) {
                 return;
             }
 
             var config = {
+                session: session_id,
                 fields: {
                     card: {
                         securityCode: '#mpgs_gateway-saved-card-cvc-' + id
@@ -175,12 +258,21 @@
             paymentSessionLoaded[id] = true;
         }
 
-        function initializeNewPaymentSession() {
+        function createSession() {
+            return $.ajax({
+                url: '<?php echo $gateway->get_create_session_url( $order->get_id() ) ?>',
+                method: 'get',
+                dataType: 'json'
+            });
+        }
+
+        function initializeNewPaymentSession(session_id) {
             if (paymentSessionLoaded['new'] === true) {
                 return;
             }
 
             var config = {
+                session: session_id,
                 fields: {
                     card: hsFieldMap()
                 },

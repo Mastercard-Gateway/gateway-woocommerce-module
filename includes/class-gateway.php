@@ -96,6 +96,11 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	/**
 	 * @var bool
 	 */
+	protected $threedsecure_v2;
+
+	/**
+	 * @var bool
+	 */
 	protected $saved_cards;
 
 	/**
@@ -624,10 +629,25 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	}
 
 	/**
+	 * @return bool
+	 */
+	public function use_3dsecure_v2() {
+		// @todo: Dynamic param
+		return true;
+	}
+
+	/**
 	 * @return string
 	 */
 	public function get_merchant_id() {
 		return $this->username;
+	}
+
+	/**
+	 * @return int
+	 */
+	public function get_api_version() {
+		return (int) self::MPGS_API_VERSION_NUM;
 	}
 
 	/**
@@ -674,6 +694,26 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				$result        = $this->service->createCheckoutSession(
 					$order_builder->getHostedCheckoutOrder(),
 					$order_builder->getInteraction( $this->capture, $returnUrl ),
+					$order_builder->getCustomer(),
+					$order_builder->getBilling(),
+					$order_builder->getShipping()
+				);
+
+				if ( $order->meta_exists( '_mpgs_success_indicator' ) ) {
+					$order->update_meta_data( '_mpgs_success_indicator', $result['successIndicator'] );
+				} else {
+					$order->add_meta_data( '_mpgs_success_indicator', $result['successIndicator'], true );
+				}
+				$order->save_meta_data();
+				break;
+
+			case ( (bool) preg_match( '~/mastercard/v1/session/\d+~', $route ) ):
+				$order     = new WC_Order( $request->get_param( 'id' ) );
+				//$returnUrl = $this->get_payment_return_url( $order->get_id() );
+
+				$order_builder = new Mastercard_CheckoutBuilder( $order );
+				$result = $this->service->createSession(
+					$order_builder->getHostedCheckoutOrder(),
 					$order_builder->getCustomer(),
 					$order_builder->getBilling(),
 					$order_builder->getShipping()
