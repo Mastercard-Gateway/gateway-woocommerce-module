@@ -895,25 +895,4 @@ class Mastercard_GatewayService {
 
 		return $response;
 	}
-
-	/**
-	 * Request to add or update request fields contained in the session.
-	 * https://test-gateway.mastercard.com/api/rest/version/58/merchant/{merchantId}/session/{sessionId}
-	 *
-	 * @param string $session_id
-	 * @param array $data
-	 *
-	 * @return mixed
-	 * @throws Exception
-	 */
-	public function updateSession( $session_id, $data ) {
-		$uri = $this->apiUrl . 'session/' . $session_id;
-
-		$request = $this->messageFactory->createRequest( 'PUT', $uri, array(), json_encode( $data ) );
-
-		$response = $this->client->sendRequest( $request );
-		$response = json_decode( $response->getBody(), true );
-
-		return $response;
-	}
 }

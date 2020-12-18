@@ -38,13 +38,13 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	const API_EU = 'eu-gateway.mastercard.com';
 	const API_AS = 'ap-gateway.mastercard.com';
 	const API_NA = 'na-gateway.mastercard.com';
-	const API_UAT = 'secure.uat.tnspayments.com';
+	//const API_UAT = 'secure.uat.tnspayments.com';
 	const API_CUSTOM = 'custom';
 
 	const TXN_MODE_PURCHASE = 'capture';
 	const TXN_MODE_AUTH_CAPTURE = 'authorize';
 
-	const THREED_DISABLED = '0';
+	const THREED_DISABLED = 'no';
 	const THREED_V1 = 'yes'; // Backward compatibility with checkbox value
 	const THREED_V2 = '2';
 
@@ -124,8 +124,8 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		$this->hc_type      = $this->get_option( 'hc_type', self::HC_TYPE_MODAL );
 		$this->capture      = $this->get_option( 'txn_mode',
 			self::TXN_MODE_PURCHASE ) == self::TXN_MODE_PURCHASE;
-		$this->threedsecure_v1 = $this->get_option( 'threedsecure', 'no' ) == self::THREED_V1;
-		$this->threedsecure_v2 = $this->get_option( 'threedsecure', 'np' ) == self::THREED_V2;
+		$this->threedsecure_v1 = $this->get_option( 'threedsecure', self::THREED_DISABLED ) == self::THREED_V1;
+		$this->threedsecure_v2 = $this->get_option( 'threedsecure', self::THREED_DISABLED ) == self::THREED_V2;
 		$this->method       = $this->get_option( 'method', self::HOSTED_CHECKOUT );
 		$this->saved_cards  = $this->get_option( 'saved_cards', 'yes' ) == 'yes';
 		$this->supports     = array(
