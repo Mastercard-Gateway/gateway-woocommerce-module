@@ -460,14 +460,10 @@ class Mastercard_GatewayService {
 	}
 
 	/**
-	 * Request to create a payment session. A payment session can be used to temporarily store any of the request
-	 * fields of operations that allow a session identifier as a request field.
-	 * The request fields stored in the session may then be used in these operations by providing the session
-	 * identifier. They may be updated and obtained using the Update Session and
-	 * Retrieve Session operation respectively.
+	 * Request to add or update request fields contained in the session.
+	 * PUT	https://test-gateway.mastercard.com/api/rest/version/58/merchant/{merchantId}/session/{sessionId}
 	 *
-	 * POST https://test-gateway.mastercard.com/api/rest/version/58/merchant/{merchantId}/session
-	 *
+	 * @param $session_id
 	 * @param array $order
 	 * @param array $customer
 	 * @param array $billing
@@ -478,32 +474,26 @@ class Mastercard_GatewayService {
 	 * @throws Exception
 	 * @throws Mastercard_GatewayResponseException
 	 */
-	public function createSession(
+	public function updateSession(
+		$session_id,
 		$order = array(),
 		$customer = array(),
 		$billing = array(),
 		$shipping = array(),
 		$authentication = array()
 	) {
-		// Create session
-		$uri = $this->apiUrl . 'session';
-		$request = $this->messageFactory->createRequest( 'POST', $uri, array(), null );
-		$response = $this->client->sendRequest( $request );
-		$session = json_decode( $response->getBody(), true );
-
-		// Update session
-		$uri = $this->apiUrl . 'session/' . $session['session']['id'];
+		$uri = $this->apiUrl . 'session/' . $session_id;
 		$params = array(
 			'order_id' => $order['id'],
-			'session_id' => $session['session']['id']
+			'session_id' => $session_id
 		);
 
 		if (!empty($authentication) && !isset($authentication['acceptVersions'])) {
 			$authentication['redirectResponseUrl'] = add_query_arg(
-				'wc-api',
-				Mastercard_Gateway::class,
-				home_url( '/' )
-			) . '&' . http_build_query( $params );
+                 'wc-api',
+                 Mastercard_Gateway::class,
+                 home_url( '/' )
+             ) . '&' . http_build_query( $params );
 		}
 
 		$request = $this->messageFactory->createRequest( 'PUT', $uri, array(), json_encode( array(
@@ -523,6 +513,26 @@ class Mastercard_GatewayService {
 		$this->validateSessionResponse( $response );
 
 		return $response;
+	}
+
+	/**
+	 * Request to create a payment session. A payment session can be used to temporarily store any of the request
+	 * fields of operations that allow a session identifier as a request field.
+	 * The request fields stored in the session may then be used in these operations by providing the session
+	 * identifier. They may be updated and obtained using the Update Session and
+	 * Retrieve Session operation respectively.
+	 *
+	 * POST https://test-gateway.mastercard.com/api/rest/version/58/merchant/{merchantId}/session
+	 *
+	 * @return string
+	 * @throws Exception
+	 */
+	public function createSession()
+	{
+		$uri = $this->apiUrl . 'session';
+		$request = $this->messageFactory->createRequest( 'POST', $uri, array() );
+		$response = $this->client->sendRequest( $request );
+		return json_decode( $response->getBody(), true );
 	}
 
 	/**

@@ -95,6 +95,17 @@ class WC_Mastercard {
 					)
 				)
 			) );
+			register_rest_route( 'mastercard/v1', '/savePayment/(?P<id>\d+)', array(
+				'methods'  => 'POST',
+				'callback' => [ $this, 'rest_route_forward' ],
+				'args'     => array(
+					'id' => array(
+						'validate_callback' => function ( $param, $request, $key ) {
+							return is_numeric( $param );
+						}
+					)
+				)
+			) );
 			register_rest_route( 'mastercard/v1', '/webhook', array(
 				'methods'  => 'GET',
 				'callback' => [ $this, 'rest_route_forward' ],

@@ -199,14 +199,33 @@
             alert("Payment was declined, please try again later.");
         }
 
-        function placeOrder(response) {
-            if (is3DsV2Enabled()) {
-                initiateAuthentication();
-            } else {
-                document.querySelector('form.mpgs_hostedsession > input[name=session_id]').value = response.session.id;
-                document.querySelector('form.mpgs_hostedsession > input[name=session_version]').value = response.session.version;
-                document.querySelector('form.mpgs_hostedsession').submit();
+        function getPaymentData() {
+            return {
+                'save_new_card': $('[name=wc-mpgs_gateway-new-payment-method]').is(':checked')
             }
+        }
+
+        function savePayment(data) {
+            return $.ajax({
+                url: '<?php echo $gateway->get_save_payment_url( $order->get_id() ) ?>',
+                method: 'post',
+                data: data,
+                dataType: 'json'
+            });
+        }
+
+        function placeOrder(response) {
+            $.when(savePayment(
+                getPaymentData()
+            )).done(function (response) {
+                    if (is3DsV2Enabled()) {
+                        initiateAuthentication();
+                    } else {
+                        document.querySelector('form.mpgs_hostedsession > input[name=session_id]').value = response.session.id;
+                        document.querySelector('form.mpgs_hostedsession > input[name=session_version]').value = response.session.version;
+                        document.querySelector('form.mpgs_hostedsession').submit();
+                    }
+                }).fail(console.error);
         }
 
         function initializeTokenPaymentSession(session_id, id) {

@@ -397,11 +397,6 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		$process_acl_result = isset( $_REQUEST['process_acs_result'] ) ? $_REQUEST['process_acs_result'] == '1' : false;
 		$tds_id             = null;
 
-		if ( isset( $_REQUEST[ 'wc-' . $this->id . '-new-payment-method' ] ) ) {
-			$order->update_meta_data( '_save_card', $_REQUEST[ 'wc-' . $this->id . '-new-payment-method' ] === 'true' );
-			$order->save_meta_data();
-		}
-
 		if ( $check_3ds ) {
 			$data      = array(
 				'authenticationRedirect' => array(
@@ -701,6 +696,15 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	}
 
 	/**
+	 * @param int $forOrderId
+	 *
+	 * @return string
+	 */
+	public function get_save_payment_url( $forOrderId ) {
+		return rest_url( "mastercard/v1/savePayment/{$forOrderId}/" );
+	}
+
+	/**
 	 * @return string
 	 */
 	public function get_webhook_url() {
@@ -739,10 +743,16 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				$order->save_meta_data();
 				break;
 
-			case ( (bool) preg_match( '~/mastercard/v1/session/\d+~', $route ) ):
+			case ( (bool) preg_match( '~/mastercard/v1/savePayment/\d+~', $route ) ):
 				$order = new WC_Order( $request->get_param( 'id' ) );
-				$auth = array();
 
+				$save_new_card = $request->get_param( 'save_new_card' ) === 'true';
+				if ( $save_new_card ) {
+					$order->update_meta_data( '_save_card', true );
+					$order->save_meta_data();
+				}
+
+				$auth = array();
 				if ($this->threedsecure_v1) {
 					$auth = array(
 						'acceptVersions' => '3DS1'
@@ -756,8 +766,11 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 					);
 				}
 
+				$session_id = $order->get_meta('_mpgs_session_id');
+
 				$order_builder = new Mastercard_CheckoutBuilder( $order );
-				$result = $this->service->createSession(
+				$result = $this->service->updateSession(
+					$session_id,
 					$order_builder->getHostedCheckoutOrder(),
 					$order_builder->getCustomer(),
 					$order_builder->getBilling(),
@@ -769,6 +782,17 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 					$order->update_meta_data( '_mpgs_success_indicator', $result['successIndicator'] );
 				} else {
 					$order->add_meta_data( '_mpgs_success_indicator', $result['successIndicator'], true );
+				}
+				$order->save_meta_data();
+				break;
+
+			case ( (bool) preg_match( '~/mastercard/v1/session/\d+~', $route ) ):
+				$order = new WC_Order( $request->get_param( 'id' ) );
+				$result = $this->service->createSession();
+				if ( $order->meta_exists( '_mpgs_session_id' ) ) {
+					$order->update_meta_data( '_mpgs_session_id', $result['session']['id'] );
+				} else {
+					$order->add_meta_data( '_mpgs_session_id', $result['session']['id'], true );
 				}
 				$order->save_meta_data();
 				break;
