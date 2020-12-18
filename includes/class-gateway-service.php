@@ -469,10 +469,10 @@ class Mastercard_GatewayService {
 	 * POST https://test-gateway.mastercard.com/api/rest/version/58/merchant/{merchantId}/session
 	 *
 	 * @param array $order
-	 * @param array $interaction
 	 * @param array $customer
 	 * @param array $billing
 	 * @param array $shipping
+	 * @param array $authentication
 	 *
 	 * @return mixed
 	 * @throws Exception
@@ -482,7 +482,8 @@ class Mastercard_GatewayService {
 		$order = array(),
 		$customer = array(),
 		$billing = array(),
-		$shipping = array()
+		$shipping = array(),
+		$authentication = array()
 	) {
 		// Create session
 		$uri = $this->apiUrl . 'session';
@@ -492,7 +493,19 @@ class Mastercard_GatewayService {
 
 		// Update session
 		$uri = $this->apiUrl . 'session/' . $session['session']['id'];
-		$params = array();
+		$params = array(
+			'order_id' => $order['id'],
+			'session_id' => $session['session']['id']
+		);
+
+		if (!empty($authentication) && !isset($authentication['acceptVersions'])) {
+			$authentication['redirectResponseUrl'] = add_query_arg(
+				'wc-api',
+				Mastercard_Gateway::class,
+				home_url( '/' )
+			) . '&' . http_build_query( $params );
+		}
+
 		$request = $this->messageFactory->createRequest( 'PUT', $uri, array(), json_encode( array(
 			'partnerSolutionId' => $this->getSolutionId(),
 			'order'             => array_merge( $order, array(
@@ -501,11 +514,7 @@ class Mastercard_GatewayService {
 			'billing'           => $billing,
 			'shipping'          => $shipping,
 			'customer'          => $customer,
-			'authentication' => [
-				'channel' => 'PAYER_BROWSER',
-				'purpose' => 'PAYMENT_TRANSACTION',
-				'redirectResponseUrl' => add_query_arg( 'wc-api', self::class, home_url( '/' ) ) . '&' . http_build_query( $params )
-			],
+			'authentication'    => $authentication,
 		) ) );
 
 		$response = $this->client->sendRequest( $request );
@@ -525,6 +534,7 @@ class Mastercard_GatewayService {
 	 * @param string $txnId
 	 * @param string $orderId
 	 * @param array $order
+	 * @param array $authentication
 	 * @param string|null $tds_id
 	 * @param array $session
 	 * @param array $customer
@@ -539,6 +549,7 @@ class Mastercard_GatewayService {
 		$txnId,
 		$orderId,
 		$order,
+		$authentication,
 		$tds_id = null,
 		$session = array(),
 		$customer = array(),
@@ -550,6 +561,7 @@ class Mastercard_GatewayService {
 
 		$request = $this->messageFactory->createRequest( 'PUT', $uri, array(), json_encode( array(
 			'apiOperation'      => 'AUTHORIZE',
+			'authentication'    => $authentication,
 			'3DSecureId'        => $tds_id,
 			'partnerSolutionId' => $this->getSolutionId(),
 			'order'             => array_merge( $order, array(
@@ -584,6 +596,7 @@ class Mastercard_GatewayService {
 	 * @param string $txnId
 	 * @param string $orderId
 	 * @param array $order
+	 * @param array $authentication
 	 * @param string|null $tds_id
 	 * @param array $session
 	 * @param array $customer
@@ -597,7 +610,8 @@ class Mastercard_GatewayService {
 	public function pay(
 		$txnId,
 		$orderId,
-		$order = array(),
+		$order,
+		$authentication,
 		$tds_id = null,
 		$session = array(),
 		$customer = array(),
@@ -609,6 +623,7 @@ class Mastercard_GatewayService {
 
 		$request = $this->messageFactory->createRequest( 'PUT', $uri, array(), json_encode( array(
 			'apiOperation'      => 'PAY',
+			'authentication'    => $authentication,
 			'3DSecureId'        => $tds_id,
 			'partnerSolutionId' => $this->getSolutionId(),
 			'order'             => array_merge( $order, array(

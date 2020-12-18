@@ -123,10 +123,11 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		$this->enabled      = $this->get_option( 'enabled', false );
 		$this->hc_type      = $this->get_option( 'hc_type', self::HC_TYPE_MODAL );
 		$this->capture      = $this->get_option( 'txn_mode',
-			self::TXN_MODE_PURCHASE ) == self::TXN_MODE_PURCHASE ? true : false;
-		$this->threedsecure_v1 = $this->get_option( 'threedsecure', 'yes' ) == 'yes' ? true : false;
+			self::TXN_MODE_PURCHASE ) == self::TXN_MODE_PURCHASE;
+		$this->threedsecure_v1 = $this->get_option( 'threedsecure', 'no' ) == self::THREED_V1;
+		$this->threedsecure_v2 = $this->get_option( 'threedsecure', 'np' ) == self::THREED_V2;
 		$this->method       = $this->get_option( 'method', self::HOSTED_CHECKOUT );
-		$this->saved_cards  = $this->get_option( 'saved_cards', 'yes' ) == 'yes' ? true : false;
+		$this->saved_cards  = $this->get_option( 'saved_cards', 'yes' ) == 'yes';
 		$this->supports     = array(
 			'products',
 			'refunds',
@@ -292,9 +293,22 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		@ob_clean();
 		header( 'HTTP/1.1 200 OK' );
 
+		$three_ds_txn_id = null;
+		if (isset($_REQUEST['response_gatewayRecommendation'])) {
+			if ($_REQUEST['response_gatewayRecommendation'] === 'PROCEED') {
+				$three_ds_txn_id = $_REQUEST['transaction_id'];
+			} else {
+				$order = new WC_Order( $_REQUEST['order_id'] );
+				$order->update_status( 'failed', 'Failed. 3DS not provided.' );
+				wc_add_notice( 'Failed. 3DS not provided.', 'error' );
+				wp_redirect( wc_get_checkout_url() );
+				exit();
+			}
+		}
+
 		if ( $this->method === self::HOSTED_SESSION ) {
 //			WC()->cart->empty_cart();
-			$this->process_hosted_session_payment();
+			$this->process_hosted_session_payment($three_ds_txn_id);
 		}
 
 		if ( $this->method === self::HOSTED_CHECKOUT ) {
@@ -362,17 +376,22 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	}
 
 	/**
+	 * @param string|null $three_ds_txn_id
 	 * @throws \Http\Client\Exception
 	 */
-	protected function process_hosted_session_payment() {
+	protected function process_hosted_session_payment($three_ds_txn_id = null) {
 		$order_id        = $_REQUEST['order_id'];
 		$session_id      = $_REQUEST['session_id'];
-		$session_version = $_REQUEST['session_version'];
+		$session_version = isset($_REQUEST['session_version']) ? $_REQUEST['session_version'] : null;
 
-		$session            = array(
-			'id'      => $session_id,
-			'version' => $session_version
+		$session = array(
+			'id' => $session_id
 		);
+
+		if ($session_version === null) {
+			$session['version'] = $session_version;
+		}
+
 		$order              = new WC_Order( $order_id );
 		$check_3ds          = isset( $_REQUEST['check_3ds_enrollment'] ) ? $_REQUEST['check_3ds_enrollment'] == '1' : false;
 		$process_acl_result = isset( $_REQUEST['process_acs_result'] ) ? $_REQUEST['process_acs_result'] == '1' : false;
@@ -450,6 +469,10 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			$this->pay( $session, $order, $tds_id );
 		}
 
+		if ( $three_ds_txn_id !== null ) {
+			$this->pay( $session, $order, $three_ds_txn_id );
+		}
+
 		if ( ! $check_3ds && ! $process_acl_result && ! $this->threedsecure_v1 ) {
 			$this->pay( $session, $order );
 		}
@@ -478,12 +501,21 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			}
 			$order->save_meta_data();
 
+			$auth = null;
+			if ($this->threedsecure_v2) {
+				$auth = [
+					'transactionId' => $tds_id
+				];
+				$tds_id = null;
+			}
+
 			$order_builder = new Mastercard_CheckoutBuilder( $order );
 			if ( $this->capture ) {
 				$mpgs_txn = $this->service->pay(
 					$txn_id,
 					$order->get_id(),
 					$order_builder->getOrder(),
+					$auth,
 					$tds_id,
 					$session,
 					$order_builder->getCustomer(),
@@ -496,6 +528,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 					$txn_id,
 					$order->get_id(),
 					$order_builder->getOrder(),
+					$auth,
 					$tds_id,
 					$session,
 					$order_builder->getCustomer(),
@@ -632,8 +665,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	 * @return bool
 	 */
 	public function use_3dsecure_v2() {
-		// @todo: Dynamic param
-		return true;
+		return $this->threedsecure_v2;
 	}
 
 	/**
@@ -708,15 +740,29 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				break;
 
 			case ( (bool) preg_match( '~/mastercard/v1/session/\d+~', $route ) ):
-				$order     = new WC_Order( $request->get_param( 'id' ) );
-				//$returnUrl = $this->get_payment_return_url( $order->get_id() );
+				$order = new WC_Order( $request->get_param( 'id' ) );
+				$auth = array();
+
+				if ($this->threedsecure_v1) {
+					$auth = array(
+						'acceptVersions' => '3DS1'
+					);
+				}
+
+				if ($this->threedsecure_v2) {
+					$auth = array(
+						'channel' => 'PAYER_BROWSER',
+						'purpose' => 'PAYMENT_TRANSACTION',
+					);
+				}
 
 				$order_builder = new Mastercard_CheckoutBuilder( $order );
 				$result = $this->service->createSession(
 					$order_builder->getHostedCheckoutOrder(),
 					$order_builder->getCustomer(),
 					$order_builder->getBilling(),
-					$order_builder->getShipping()
+					$order_builder->getShipping(),
+					$auth
 				);
 
 				if ( $order->meta_exists( '_mpgs_success_indicator' ) ) {
@@ -747,6 +793,13 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	public function get_hosted_session_js() {
 		return sprintf( 'https://%s/form/%s/merchant/%s/session.js', $this->get_gateway_url(), self::MPGS_API_VERSION,
 			$this->get_merchant_id() );
+	}
+
+	/**
+	 * @return string
+	 */
+	public function get_threeds_js() {
+		return sprintf( 'https://%s/static/threeDS/1.3.0/three-ds.min.js', $this->get_gateway_url() );
 	}
 
 	/**
@@ -873,7 +926,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				'options'     => array(
 					self::THREED_DISABLED => __('Disabled'),
 					self::THREED_V1 => __('3DS1'),
-					self::THREED_V2 => __('3DS2'),
+					self::THREED_V2 => __('3DS2 (with fallback to 3DS1)'),
 				),
 				'default'     => self::THREED_DISABLED,
 				'description' => __( 'For more information please contact your payment service provider.',

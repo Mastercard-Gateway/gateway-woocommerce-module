@@ -25,11 +25,11 @@
 <script src="<?php echo $gateway->get_hosted_session_js() ?>"></script>
 
 <?php if ($gateway->use_3dsecure_v1() || $gateway->use_3dsecure_v2()): ?>
-<?php /* @todo: Add URL as param https://mtf.gateway.mastercard.com/ */?>
-<script src="https://mtf.gateway.mastercard.com/static/threeDS/1.3.0/three-ds.min.js"></script>
+<script src="<?php echo $gateway->get_threeds_js() ?>"></script>
 <?php endif; ?>
 
 <style id="antiClickjack">body{display:none !important;}</style>
+
 <div id="3DSUI"></div>
 
 <form class="mpgs_hostedsession wc-payment-form" action="<?php echo $gateway->get_payment_return_url( $order->get_id() ) ?>" method="post">
@@ -99,16 +99,18 @@
         });
 
         $.when(createSession()).done(function (response) {
-            ThreeDS.configure({
-                merchantId: '<?php echo $gateway->get_merchant_id() ?>',
-                sessionId: response.session.id,
-                containerId: "3DSUI",
-                callback: function () {
-                },
-                configuration: {
-                    wsVersion: <?php echo $gateway->get_api_version() ?>
-                }
-            });
+            if (is3DsV2Enabled()) {
+                ThreeDS.configure({
+                    merchantId: '<?php echo $gateway->get_merchant_id() ?>',
+                    sessionId: response.session.id,
+                    containerId: "3DSUI",
+                    callback: function () {
+                    },
+                    configuration: {
+                        wsVersion: <?php echo $gateway->get_api_version() ?>
+                    }
+                });
+            }
 
             var tokenChoices = $('[name=wc-mpgs_gateway-payment-token]');
             if (tokenChoices.length > 1) {
@@ -159,29 +161,20 @@
 
         function displayChallengeAuth(data) {
             if (!data.error) {
-                switch (data.gatewayRecommendation) {
-                    case 'PROCEED':
-                        document.documentElement.innerHTML = data.htmlRedirectCode;
-                        break;
-                    case "DO_NOT_PROCEED":
-                        alert("{{ error_payment_declined_3ds }}");
-                        break;
-                }
+                document.body.innerHTML = data.htmlRedirectCode;
             } else {
-                console.error(data.error);
+                placeOrderFail(data.error);
             }
         }
 
         function authenticatePayer(txnId, data) {
             if (data && data.error) {
                 var error = data.error;
-
-                //Something bad happened, the error value will match what is returned by the Authentication API
                 console.error("error.code : ", error.code);
                 console.error("error.msg : ", error.msg);
                 console.error("error.result : ", error.result);
                 console.error("error.status : ", error.status);
-                console.error(error);
+                placeOrderFail(error);
             } else {
                 switch (data.gatewayRecommendation) {
                     case "PROCEED":
@@ -195,10 +188,15 @@
                         );
                         break;
                     case "DO_NOT_PROCEED":
-                        alert("{{ error_payment_declined_3ds }}");
+                        // merchant's method, you can offer the payer the option to try another payment method.
+                        alert("Payment was declined, please try again later.");
                         break;
                 }
             }
+        }
+
+        function placeOrderFail (error) {
+            alert("Payment was declined, please try again later.");
         }
 
         function placeOrder(response) {
