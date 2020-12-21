@@ -299,8 +299,8 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				$three_ds_txn_id = $_REQUEST['transaction_id'];
 			} else {
 				$order = new WC_Order( $_REQUEST['order_id'] );
-				$order->update_status( 'failed', 'Failed. 3DS not provided.' );
-				wc_add_notice( 'Failed. 3DS not provided.', 'error' );
+				$order->update_status( 'failed', __( '3DS authorization was not provided. Payment declined.', 'mastercard' ) );
+				wc_add_notice( __( '3DS authorization was not provided. Payment declined.', 'mastercard' ), 'error' );
 				wp_redirect( wc_get_checkout_url() );
 				exit();
 			}
@@ -515,8 +515,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 					$session,
 					$order_builder->getCustomer(),
 					$order_builder->getBilling(),
-					$order_builder->getShipping(),
-					$this->get_token_from_request()
+					$order_builder->getShipping()
 				);
 			} else {
 				$mpgs_txn = $this->service->authorize(
@@ -528,8 +527,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 					$session,
 					$order_builder->getCustomer(),
 					$order_builder->getBilling(),
-					$order_builder->getShipping(),
-					$this->get_token_from_request()
+					$order_builder->getShipping()
 				);
 			}
 
@@ -540,7 +538,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			$this->process_wc_order( $order, $mpgs_txn['order'], $mpgs_txn );
 
 			if ( $this->saved_cards && $order->get_meta( '_save_card' ) ) {
-				$this->process_saved_cards( $session );
+				$this->process_saved_cards( $session, $order->get_user_id('system') );
 			}
 
 			wp_redirect( $this->get_return_url( $order ) );
@@ -555,10 +553,11 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 
 	/**
 	 * @param array $session
+	 * @param mixed $user_id
 	 *
 	 * @throws \Http\Client\Exception
 	 */
-	protected function process_saved_cards( $session ) {
+	protected function process_saved_cards( $session, $user_id ) {
 		$response = $this->service->createCardToken( $session['id'] );
 
 		if ( ! isset( $response['token'] ) || empty( $response['token'] ) ) {
@@ -581,7 +580,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 
 		$token->set_expiry_month( $m[1] );
 		$token->set_expiry_year( '20' . $m[2] );
-		$token->set_user_id( get_current_user_id() );
+		$token->set_user_id( $user_id );
 
 		$token->save();
 	}
@@ -769,13 +768,14 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				$session_id = $order->get_meta('_mpgs_session_id');
 
 				$order_builder = new Mastercard_CheckoutBuilder( $order );
-				$result = $this->service->updateSession(
+				$result = $this->service->update_session(
 					$session_id,
 					$order_builder->getHostedCheckoutOrder(),
 					$order_builder->getCustomer(),
 					$order_builder->getBilling(),
 					$order_builder->getShipping(),
-					$auth
+					$auth,
+					$this->get_token_from_request()
 				);
 
 				if ( $order->meta_exists( '_mpgs_success_indicator' ) ) {
@@ -788,7 +788,8 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 
 			case ( (bool) preg_match( '~/mastercard/v1/session/\d+~', $route ) ):
 				$order = new WC_Order( $request->get_param( 'id' ) );
-				$result = $this->service->createSession();
+				$result = $this->service->create_session();
+
 				if ( $order->meta_exists( '_mpgs_session_id' ) ) {
 					$order->update_meta_data( '_mpgs_session_id', $result['session']['id'] );
 				} else {

@@ -114,22 +114,27 @@
 
             var tokenChoices = $('[name=wc-mpgs_gateway-payment-token]');
             if (tokenChoices.length > 1) {
-                tokenChoices.on('change', function () {
-                    var errorsContainer = document.getElementById('hostedsession_errors');
-                    errorsContainer.style.display = 'none';
-
-                    var selectedPayment = $('[name=wc-mpgs_gateway-payment-token]:checked').val();
-                    if ('new' === selectedPayment) {
-                        initializeNewPaymentSession(response.session.id);
-                    } else {
-                        initializeTokenPaymentSession(response.session.id, selectedPayment);
-                    }
+                tokenChoices.on('change', function() {
+                    initSelectedPaymentMethod(response);
                 });
+                initSelectedPaymentMethod(response);
             } else {
                 initializeNewPaymentSession(response.session.id);
             }
         })
         .fail(console.error);
+
+        function initSelectedPaymentMethod(response) {
+            var errorsContainer = document.getElementById('hostedsession_errors');
+            errorsContainer.style.display = 'none';
+
+            var selectedPayment = $('[name=wc-mpgs_gateway-payment-token]:checked').val();
+            if ('new' === selectedPayment) {
+                initializeNewPaymentSession(response.session.id);
+            } else {
+                initializeTokenPaymentSession(response.session.id, selectedPayment);
+            }
+        }
 
         function is3DsV1Enabled() {
 		    <?php if ($gateway->use_3dsecure_v1()): ?>
@@ -201,7 +206,9 @@
 
         function getPaymentData() {
             return {
-                'save_new_card': $('[name=wc-mpgs_gateway-new-payment-method]').is(':checked')
+                '_wpnonce': '<?php echo wp_create_nonce( 'wp_rest' ) ?>',
+                'save_new_card': $('[name=wc-mpgs_gateway-new-payment-method]').is(':checked'),
+                'wc-mpgs_gateway-payment-token': $('[name=wc-mpgs_gateway-payment-token]').val()
             }
         }
 

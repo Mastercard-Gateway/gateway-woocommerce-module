@@ -461,7 +461,7 @@ class Mastercard_GatewayService {
 
 	/**
 	 * Request to add or update request fields contained in the session.
-	 * PUT	https://test-gateway.mastercard.com/api/rest/version/58/merchant/{merchantId}/session/{sessionId}
+	 * PUT    https://test-gateway.mastercard.com/api/rest/version/58/merchant/{merchantId}/session/{sessionId}
 	 *
 	 * @param $session_id
 	 * @param array $order
@@ -469,18 +469,20 @@ class Mastercard_GatewayService {
 	 * @param array $billing
 	 * @param array $shipping
 	 * @param array $authentication
+	 * @param array $token
 	 *
 	 * @return mixed
 	 * @throws Exception
 	 * @throws Mastercard_GatewayResponseException
 	 */
-	public function updateSession(
+	public function update_session(
 		$session_id,
 		$order = array(),
 		$customer = array(),
 		$billing = array(),
 		$shipping = array(),
-		$authentication = array()
+		$authentication = array(),
+		$token = array()
 	) {
 		$uri = $this->apiUrl . 'session/' . $session_id;
 		$params = array(
@@ -505,6 +507,9 @@ class Mastercard_GatewayService {
 			'shipping'          => $shipping,
 			'customer'          => $customer,
 			'authentication'    => $authentication,
+			'sourceOfFunds'     => array_merge( $token, array(
+				'type' => 'CARD'
+			) ),
 		) ) );
 
 		$response = $this->client->sendRequest( $request );
@@ -524,10 +529,10 @@ class Mastercard_GatewayService {
 	 *
 	 * POST https://test-gateway.mastercard.com/api/rest/version/58/merchant/{merchantId}/session
 	 *
-	 * @return string
+	 * @return array
 	 * @throws Exception
 	 */
-	public function createSession()
+	public function create_session()
 	{
 		$uri = $this->apiUrl . 'session';
 		$request = $this->messageFactory->createRequest( 'POST', $uri, array() );
@@ -550,7 +555,6 @@ class Mastercard_GatewayService {
 	 * @param array $customer
 	 * @param array $billing
 	 * @param array $shipping
-	 * @param array $token
 	 *
 	 * @return mixed|ResponseInterface
 	 * @throws Exception
@@ -564,8 +568,7 @@ class Mastercard_GatewayService {
 		$session = array(),
 		$customer = array(),
 		$billing = array(),
-		$shipping = array(),
-		$token = array()
+		$shipping = array()
 	) {
 		$uri = $this->apiUrl . 'order/' . $orderId . '/transaction/' . $txnId;
 
@@ -580,9 +583,6 @@ class Mastercard_GatewayService {
 			'billing'           => $billing,
 			'shipping'          => $shipping,
 			'customer'          => $customer,
-			'sourceOfFunds'     => array_merge( $token, array(
-				'type' => 'CARD'
-			) ),
 			'session'           => $session,
 		) ) );
 
@@ -612,7 +612,6 @@ class Mastercard_GatewayService {
 	 * @param array $customer
 	 * @param array $billing
 	 * @param array $shipping
-	 * @param array $token
 	 *
 	 * @return mixed|ResponseInterface
 	 * @throws Exception
@@ -626,8 +625,7 @@ class Mastercard_GatewayService {
 		$session = array(),
 		$customer = array(),
 		$billing = array(),
-		$shipping = array(),
-		$token = array()
+		$shipping = array()
 	) {
 		$uri = $this->apiUrl . 'order/' . $orderId . '/transaction/' . $txnId;
 
@@ -642,9 +640,6 @@ class Mastercard_GatewayService {
 			'billing'           => $billing,
 			'shipping'          => $shipping,
 			'customer'          => $customer,
-			'sourceOfFunds'     => array_merge( $token, array(
-				'type' => 'CARD'
-			) ),
 			'session'           => $session,
 		) ) );
 

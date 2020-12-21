@@ -173,11 +173,8 @@ class WC_Mastercard {
 	 * @return array
 	 */
 	public function plugin_action_links( $links ) {
-		// todo: Add 'Support'
-
-		//
 		array_unshift( $links, '<a href="https://www.ontapgroup.com/uk/helpdesk/ticket/">' . __( 'Support', 'mastercard' ) . '</a>' );
-		array_unshift( $links, '<a href="http://wiki.ontapgroup.com/display/MPGS">' . __( 'Docs', 'mastercard' ) . '</a>' );
+		array_unshift( $links, '<a href="http://ontap.wiki/woocommerce-mastercard-payment-gateway-services">' . __( 'Docs', 'mastercard' ) . '</a>' );
 		array_unshift( $links, '<a href="' . admin_url( 'admin.php?page=wc-settings&tab=checkout&section=mpgs_gateway' ) . '">' . __( 'Settings', 'mastercard' ) . '</a>' );
 
 		return $links;
