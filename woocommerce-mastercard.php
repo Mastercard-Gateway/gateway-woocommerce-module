@@ -5,7 +5,7 @@
  * Plugin URI: https://github.com/Mastercard-Gateway/gateway-woocommerce-module/
  * Author: OnTap Networks Ltd.
  * Author URI: https://www.ontapgroup.com/
- * Version: 1.1.0
+ * Version: 1.2.0
  */
 
 /**
@@ -84,6 +84,28 @@ class WC_Mastercard {
 					)
 				)
 			) );
+			register_rest_route( 'mastercard/v1', '/session/(?P<id>\d+)', array(
+				'methods'  => 'GET',
+				'callback' => [ $this, 'rest_route_forward' ],
+				'args'     => array(
+					'id' => array(
+						'validate_callback' => function ( $param, $request, $key ) {
+							return is_numeric( $param );
+						}
+					)
+				)
+			) );
+			register_rest_route( 'mastercard/v1', '/savePayment/(?P<id>\d+)', array(
+				'methods'  => 'POST',
+				'callback' => [ $this, 'rest_route_forward' ],
+				'args'     => array(
+					'id' => array(
+						'validate_callback' => function ( $param, $request, $key ) {
+							return is_numeric( $param );
+						}
+					)
+				)
+			) );
 			register_rest_route( 'mastercard/v1', '/webhook', array(
 				'methods'  => 'GET',
 				'callback' => [ $this, 'rest_route_forward' ],
@@ -151,11 +173,8 @@ class WC_Mastercard {
 	 * @return array
 	 */
 	public function plugin_action_links( $links ) {
-		// todo: Add 'Support'
-
-		//
 		array_unshift( $links, '<a href="https://www.ontapgroup.com/uk/helpdesk/ticket/">' . __( 'Support', 'mastercard' ) . '</a>' );
-		array_unshift( $links, '<a href="http://wiki.ontapgroup.com/display/MPGS">' . __( 'Docs', 'mastercard' ) . '</a>' );
+		array_unshift( $links, '<a href="http://ontap.wiki/woocommerce-mastercard-payment-gateway-services">' . __( 'Docs', 'mastercard' ) . '</a>' );
 		array_unshift( $links, '<a href="' . admin_url( 'admin.php?page=wc-settings&tab=checkout&section=mpgs_gateway' ) . '">' . __( 'Settings', 'mastercard' ) . '</a>' );
 
 		return $links;
