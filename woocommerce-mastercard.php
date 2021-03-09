@@ -76,6 +76,7 @@ class WC_Mastercard {
 			register_rest_route( 'mastercard/v1', '/checkoutSession/(?P<id>\d+)', array(
 				'methods'  => 'GET',
 				'callback' => [ $this, 'rest_route_forward' ],
+                'permission_callback' => array( $this, 'get_items_permissions_check' ),
 				'args'     => array(
 					'id' => array(
 						'validate_callback' => function ( $param, $request, $key ) {
@@ -87,6 +88,7 @@ class WC_Mastercard {
 			register_rest_route( 'mastercard/v1', '/session/(?P<id>\d+)', array(
 				'methods'  => 'GET',
 				'callback' => [ $this, 'rest_route_forward' ],
+                'permission_callback' => array( $this, 'get_items_permissions_check' ),
 				'args'     => array(
 					'id' => array(
 						'validate_callback' => function ( $param, $request, $key ) {
@@ -98,6 +100,7 @@ class WC_Mastercard {
 			register_rest_route( 'mastercard/v1', '/savePayment/(?P<id>\d+)', array(
 				'methods'  => 'POST',
 				'callback' => [ $this, 'rest_route_forward' ],
+                'permission_callback' => array( $this, 'get_items_permissions_check' ),
 				'args'     => array(
 					'id' => array(
 						'validate_callback' => function ( $param, $request, $key ) {
@@ -109,9 +112,18 @@ class WC_Mastercard {
 			register_rest_route( 'mastercard/v1', '/webhook', array(
 				'methods'  => 'GET',
 				'callback' => [ $this, 'rest_route_forward' ],
+                'permission_callback' => array( $this, 'get_items_permissions_check' ),
 			) );
 		} );
 	}
+
+    /**
+     * @param $request
+     * @return bool
+     */
+    public function get_items_permissions_check( $request ) {
+        return true;
+    }
 
 	/**
 	 * @param WP_REST_Request $request
