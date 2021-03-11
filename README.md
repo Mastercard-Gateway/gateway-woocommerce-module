@@ -1,12 +1,14 @@
 # Mastercard Payment Gateway Services module for WooCommerce
 ## Compatibility
-The module has been tested with the WooCommerce version:
-- Version 3.9.3
-- Version 4.0
+The module has been tested with the WooCommerce versions:
+- 3.9.3
+- 4.0
+- 4.8
 
-The module has been tested with the WordPress version:
-- Version 5.2.4
-- Version 5.3.2
+The module has been tested with the WordPress versions:
+- 5.2.4
+- 5.3.2
+- 5.6
 
 and with PHP versions:
 - 7.2

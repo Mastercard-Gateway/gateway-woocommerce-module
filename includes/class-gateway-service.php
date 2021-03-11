@@ -307,6 +307,17 @@ class Mastercard_GatewayService {
 	}
 
 	/**
+	 * @param $data
+	 *
+	 * @throws Mastercard_GatewayResponseException
+	 */
+	public function validateSessionResponse( $data ) {
+		if ( ! isset( $data['session']['id'] ) ) {
+			throw new Mastercard_GatewayResponseException( 'Missing session or ID.' );
+		}
+	}
+
+	/**
 	 * @param array $data
 	 */
 	public function validateTxnResponse( $data ) {
@@ -449,6 +460,87 @@ class Mastercard_GatewayService {
 	}
 
 	/**
+	 * Request to add or update request fields contained in the session.
+	 * PUT    https://test-gateway.mastercard.com/api/rest/version/58/merchant/{merchantId}/session/{sessionId}
+	 *
+	 * @param $session_id
+	 * @param array $order
+	 * @param array $customer
+	 * @param array $billing
+	 * @param array $shipping
+	 * @param array $authentication
+	 * @param array $token
+	 *
+	 * @return mixed
+	 * @throws Exception
+	 * @throws Mastercard_GatewayResponseException
+	 */
+	public function update_session(
+		$session_id,
+		$order = array(),
+		$customer = array(),
+		$billing = array(),
+		$shipping = array(),
+		$authentication = array(),
+		$token = array()
+	) {
+		$uri = $this->apiUrl . 'session/' . $session_id;
+		$params = array(
+			'order_id' => $order['id'],
+			'session_id' => $session_id
+		);
+
+		if (!empty($authentication) && !isset($authentication['acceptVersions'])) {
+			$authentication['redirectResponseUrl'] = add_query_arg(
+                 'wc-api',
+                 Mastercard_Gateway::class,
+                 home_url( '/' )
+             ) . '&' . http_build_query( $params );
+		}
+
+		$request = $this->messageFactory->createRequest( 'PUT', $uri, array(), json_encode( array(
+			'partnerSolutionId' => $this->getSolutionId(),
+			'order'             => array_merge( $order, array(
+				'notificationUrl' => $this->webhookUrl
+			) ),
+			'billing'           => $billing,
+			'shipping'          => $shipping,
+			'customer'          => $customer,
+			'authentication'    => $authentication,
+			'sourceOfFunds'     => array_merge( $token, array(
+				'type' => 'CARD'
+			) ),
+		) ) );
+
+		$response = $this->client->sendRequest( $request );
+		$response = json_decode( $response->getBody(), true );
+
+		$this->validateSessionResponse( $response );
+
+		return $response;
+	}
+
+	/**
+	 * Request to create a payment session. A payment session can be used to temporarily store any of the request
+	 * fields of operations that allow a session identifier as a request field.
+	 * The request fields stored in the session may then be used in these operations by providing the session
+	 * identifier. They may be updated and obtained using the Update Session and
+	 * Retrieve Session operation respectively.
+	 *
+	 * POST https://test-gateway.mastercard.com/api/rest/version/58/merchant/{merchantId}/session
+	 *
+	 * @return array
+	 * @throws Exception
+	 */
+	public function create_session()
+	{
+		$uri = $this->apiUrl . 'session';
+		$request = $this->messageFactory->createRequest( 'POST', $uri, array() );
+		$response = $this->client->sendRequest( $request );
+		return json_decode( $response->getBody(), true );
+	}
+
+	/**
 	 * Request to obtain an authorization for a proposed funds transfer.
 	 * An authorization is a response from a financial institution indicating that payment information
 	 * is valid and funds are available in the payers account.
@@ -457,12 +549,12 @@ class Mastercard_GatewayService {
 	 * @param string $txnId
 	 * @param string $orderId
 	 * @param array $order
+	 * @param array $authentication
 	 * @param string|null $tds_id
 	 * @param array $session
 	 * @param array $customer
 	 * @param array $billing
 	 * @param array $shipping
-	 * @param array $token
 	 *
 	 * @return mixed|ResponseInterface
 	 * @throws Exception
@@ -471,17 +563,18 @@ class Mastercard_GatewayService {
 		$txnId,
 		$orderId,
 		$order,
+		$authentication,
 		$tds_id = null,
 		$session = array(),
 		$customer = array(),
 		$billing = array(),
-		$shipping = array(),
-		$token = array()
+		$shipping = array()
 	) {
 		$uri = $this->apiUrl . 'order/' . $orderId . '/transaction/' . $txnId;
 
 		$request = $this->messageFactory->createRequest( 'PUT', $uri, array(), json_encode( array(
 			'apiOperation'      => 'AUTHORIZE',
+			'authentication'    => $authentication,
 			'3DSecureId'        => $tds_id,
 			'partnerSolutionId' => $this->getSolutionId(),
 			'order'             => array_merge( $order, array(
@@ -490,9 +583,6 @@ class Mastercard_GatewayService {
 			'billing'           => $billing,
 			'shipping'          => $shipping,
 			'customer'          => $customer,
-			'sourceOfFunds'     => array_merge( $token, array(
-				'type' => 'CARD'
-			) ),
 			'session'           => $session,
 		) ) );
 
@@ -516,12 +606,12 @@ class Mastercard_GatewayService {
 	 * @param string $txnId
 	 * @param string $orderId
 	 * @param array $order
+	 * @param array $authentication
 	 * @param string|null $tds_id
 	 * @param array $session
 	 * @param array $customer
 	 * @param array $billing
 	 * @param array $shipping
-	 * @param array $token
 	 *
 	 * @return mixed|ResponseInterface
 	 * @throws Exception
@@ -529,18 +619,19 @@ class Mastercard_GatewayService {
 	public function pay(
 		$txnId,
 		$orderId,
-		$order = array(),
+		$order,
+		$authentication,
 		$tds_id = null,
 		$session = array(),
 		$customer = array(),
 		$billing = array(),
-		$shipping = array(),
-		$token = array()
+		$shipping = array()
 	) {
 		$uri = $this->apiUrl . 'order/' . $orderId . '/transaction/' . $txnId;
 
 		$request = $this->messageFactory->createRequest( 'PUT', $uri, array(), json_encode( array(
 			'apiOperation'      => 'PAY',
+			'authentication'    => $authentication,
 			'3DSecureId'        => $tds_id,
 			'partnerSolutionId' => $this->getSolutionId(),
 			'order'             => array_merge( $order, array(
@@ -549,9 +640,6 @@ class Mastercard_GatewayService {
 			'billing'           => $billing,
 			'shipping'          => $shipping,
 			'customer'          => $customer,
-			'sourceOfFunds'     => array_merge( $token, array(
-				'type' => 'CARD'
-			) ),
 			'session'           => $session,
 		) ) );
 

@@ -16,7 +16,7 @@
  *
  */
 
-define( 'MPGS_MODULE_VERSION', '1.1.0' );
+define( 'MPGS_MODULE_VERSION', '1.2.0' );
 
 require_once dirname( __FILE__ ) . '/class-checkout-builder.php';
 require_once dirname( __FILE__ ) . '/class-gateway-service.php';
@@ -26,8 +26,8 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 
 	const ID = 'mpgs_gateway';
 
-	const MPGS_API_VERSION = 'version/54';
-	const MPGS_API_VERSION_NUM = '54';
+	const MPGS_API_VERSION = 'version/58';
+	const MPGS_API_VERSION_NUM = '58';
 
 	const HOSTED_SESSION = 'hostedsession';
 	const HOSTED_CHECKOUT = 'hostedcheckout';
@@ -38,11 +38,15 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	const API_EU = 'eu-gateway.mastercard.com';
 	const API_AS = 'ap-gateway.mastercard.com';
 	const API_NA = 'na-gateway.mastercard.com';
-	const API_UAT = 'secure.uat.tnspayments.com';
+	//const API_UAT = 'secure.uat.tnspayments.com';
 	const API_CUSTOM = 'custom';
 
 	const TXN_MODE_PURCHASE = 'capture';
 	const TXN_MODE_AUTH_CAPTURE = 'authorize';
+
+	const THREED_DISABLED = 'no';
+	const THREED_V1 = 'yes'; // Backward compatibility with checkbox value
+	const THREED_V2 = '2';
 
 	/**
 	 * @var bool
@@ -87,7 +91,12 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	/**
 	 * @var bool
 	 */
-	protected $threedsecure;
+	protected $threedsecure_v1;
+
+	/**
+	 * @var bool
+	 */
+	protected $threedsecure_v2;
 
 	/**
 	 * @var bool
@@ -114,10 +123,11 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		$this->enabled      = $this->get_option( 'enabled', false );
 		$this->hc_type      = $this->get_option( 'hc_type', self::HC_TYPE_MODAL );
 		$this->capture      = $this->get_option( 'txn_mode',
-			self::TXN_MODE_PURCHASE ) == self::TXN_MODE_PURCHASE ? true : false;
-		$this->threedsecure = $this->get_option( 'threedsecure', 'yes' ) == 'yes' ? true : false;
+			self::TXN_MODE_PURCHASE ) == self::TXN_MODE_PURCHASE;
+		$this->threedsecure_v1 = $this->get_option( 'threedsecure', self::THREED_DISABLED ) == self::THREED_V1;
+		$this->threedsecure_v2 = $this->get_option( 'threedsecure', self::THREED_DISABLED ) == self::THREED_V2;
 		$this->method       = $this->get_option( 'method', self::HOSTED_CHECKOUT );
-		$this->saved_cards  = $this->get_option( 'saved_cards', 'yes' ) == 'yes' ? true : false;
+		$this->saved_cards  = $this->get_option( 'saved_cards', 'yes' ) == 'yes';
 		$this->supports     = array(
 			'products',
 			'refunds',
@@ -283,9 +293,22 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		@ob_clean();
 		header( 'HTTP/1.1 200 OK' );
 
+		$three_ds_txn_id = null;
+		if (isset($_REQUEST['response_gatewayRecommendation'])) {
+			if ($_REQUEST['response_gatewayRecommendation'] === 'PROCEED') {
+				$three_ds_txn_id = $_REQUEST['transaction_id'];
+			} else {
+				$order = new WC_Order( $_REQUEST['order_id'] );
+				$order->update_status( 'failed', __( '3DS authorization was not provided. Payment declined.', 'mastercard' ) );
+				wc_add_notice( __( '3DS authorization was not provided. Payment declined.', 'mastercard' ), 'error' );
+				wp_redirect( wc_get_checkout_url() );
+				exit();
+			}
+		}
+
 		if ( $this->method === self::HOSTED_SESSION ) {
 //			WC()->cart->empty_cart();
-			$this->process_hosted_session_payment();
+			$this->process_hosted_session_payment($three_ds_txn_id);
 		}
 
 		if ( $this->method === self::HOSTED_CHECKOUT ) {
@@ -353,26 +376,26 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	}
 
 	/**
+	 * @param string|null $three_ds_txn_id
 	 * @throws \Http\Client\Exception
 	 */
-	protected function process_hosted_session_payment() {
+	protected function process_hosted_session_payment($three_ds_txn_id = null) {
 		$order_id        = $_REQUEST['order_id'];
 		$session_id      = $_REQUEST['session_id'];
-		$session_version = $_REQUEST['session_version'];
+		$session_version = isset($_REQUEST['session_version']) ? $_REQUEST['session_version'] : null;
 
-		$session            = array(
-			'id'      => $session_id,
-			'version' => $session_version
+		$session = array(
+			'id' => $session_id
 		);
+
+		if ($session_version === null) {
+			$session['version'] = $session_version;
+		}
+
 		$order              = new WC_Order( $order_id );
 		$check_3ds          = isset( $_REQUEST['check_3ds_enrollment'] ) ? $_REQUEST['check_3ds_enrollment'] == '1' : false;
 		$process_acl_result = isset( $_REQUEST['process_acs_result'] ) ? $_REQUEST['process_acs_result'] == '1' : false;
 		$tds_id             = null;
-
-		if ( isset( $_REQUEST[ 'wc-' . $this->id . '-new-payment-method' ] ) ) {
-			$order->update_meta_data( '_save_card', $_REQUEST[ 'wc-' . $this->id . '-new-payment-method' ] === 'true' );
-			$order->save_meta_data();
-		}
 
 		if ( $check_3ds ) {
 			$data      = array(
@@ -441,7 +464,11 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			$this->pay( $session, $order, $tds_id );
 		}
 
-		if ( ! $check_3ds && ! $process_acl_result && ! $this->threedsecure ) {
+		if ( $three_ds_txn_id !== null ) {
+			$this->pay( $session, $order, $three_ds_txn_id );
+		}
+
+		if ( ! $check_3ds && ! $process_acl_result && ! $this->threedsecure_v1 ) {
 			$this->pay( $session, $order );
 		}
 
@@ -469,30 +496,38 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			}
 			$order->save_meta_data();
 
+			$auth = null;
+			if ($this->threedsecure_v2) {
+				$auth = [
+					'transactionId' => $tds_id
+				];
+				$tds_id = null;
+			}
+
 			$order_builder = new Mastercard_CheckoutBuilder( $order );
 			if ( $this->capture ) {
 				$mpgs_txn = $this->service->pay(
 					$txn_id,
 					$order->get_id(),
 					$order_builder->getOrder(),
+					$auth,
 					$tds_id,
 					$session,
 					$order_builder->getCustomer(),
 					$order_builder->getBilling(),
-					$order_builder->getShipping(),
-					$this->get_token_from_request()
+					$order_builder->getShipping()
 				);
 			} else {
 				$mpgs_txn = $this->service->authorize(
 					$txn_id,
 					$order->get_id(),
 					$order_builder->getOrder(),
+					$auth,
 					$tds_id,
 					$session,
 					$order_builder->getCustomer(),
 					$order_builder->getBilling(),
-					$order_builder->getShipping(),
-					$this->get_token_from_request()
+					$order_builder->getShipping()
 				);
 			}
 
@@ -503,7 +538,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			$this->process_wc_order( $order, $mpgs_txn['order'], $mpgs_txn );
 
 			if ( $this->saved_cards && $order->get_meta( '_save_card' ) ) {
-				$this->process_saved_cards( $session );
+				$this->process_saved_cards( $session, $order->get_user_id('system') );
 			}
 
 			wp_redirect( $this->get_return_url( $order ) );
@@ -518,10 +553,11 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 
 	/**
 	 * @param array $session
+	 * @param mixed $user_id
 	 *
 	 * @throws \Http\Client\Exception
 	 */
-	protected function process_saved_cards( $session ) {
+	protected function process_saved_cards( $session, $user_id ) {
 		$response = $this->service->createCardToken( $session['id'] );
 
 		if ( ! isset( $response['token'] ) || empty( $response['token'] ) ) {
@@ -544,7 +580,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 
 		$token->set_expiry_month( $m[1] );
 		$token->set_expiry_year( '20' . $m[2] );
-		$token->set_user_id( get_current_user_id() );
+		$token->set_user_id( $user_id );
 
 		$token->save();
 	}
@@ -615,8 +651,15 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	/**
 	 * @return bool
 	 */
-	public function use_3dsecure() {
-		return $this->threedsecure;
+	public function use_3dsecure_v1() {
+		return $this->threedsecure_v1;
+	}
+
+	/**
+	 * @return bool
+	 */
+	public function use_3dsecure_v2() {
+		return $this->threedsecure_v2;
 	}
 
 	/**
@@ -624,6 +667,13 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	 */
 	public function get_merchant_id() {
 		return $this->username;
+	}
+
+	/**
+	 * @return int
+	 */
+	public function get_api_version() {
+		return (int) self::MPGS_API_VERSION_NUM;
 	}
 
 	/**
@@ -642,6 +692,15 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	 */
 	public function get_create_session_url( $forOrderId ) {
 		return rest_url( "mastercard/v1/session/{$forOrderId}/" );
+	}
+
+	/**
+	 * @param int $forOrderId
+	 *
+	 * @return string
+	 */
+	public function get_save_payment_url( $forOrderId ) {
+		return rest_url( "mastercard/v1/savePayment/{$forOrderId}/" );
 	}
 
 	/**
@@ -683,6 +742,62 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				$order->save_meta_data();
 				break;
 
+			case ( (bool) preg_match( '~/mastercard/v1/savePayment/\d+~', $route ) ):
+				$order = new WC_Order( $request->get_param( 'id' ) );
+
+				$save_new_card = $request->get_param( 'save_new_card' ) === 'true';
+				if ( $save_new_card ) {
+					$order->update_meta_data( '_save_card', true );
+					$order->save_meta_data();
+				}
+
+				$auth = array();
+				if ($this->threedsecure_v1) {
+					$auth = array(
+						'acceptVersions' => '3DS1'
+					);
+				}
+
+				if ($this->threedsecure_v2) {
+					$auth = array(
+						'channel' => 'PAYER_BROWSER',
+						'purpose' => 'PAYMENT_TRANSACTION',
+					);
+				}
+
+				$session_id = $order->get_meta('_mpgs_session_id');
+
+				$order_builder = new Mastercard_CheckoutBuilder( $order );
+				$result = $this->service->update_session(
+					$session_id,
+					$order_builder->getHostedCheckoutOrder(),
+					$order_builder->getCustomer(),
+					$order_builder->getBilling(),
+					$order_builder->getShipping(),
+					$auth,
+					$this->get_token_from_request()
+				);
+
+				if ( $order->meta_exists( '_mpgs_success_indicator' ) ) {
+					$order->update_meta_data( '_mpgs_success_indicator', $result['successIndicator'] );
+				} else {
+					$order->add_meta_data( '_mpgs_success_indicator', $result['successIndicator'], true );
+				}
+				$order->save_meta_data();
+				break;
+
+			case ( (bool) preg_match( '~/mastercard/v1/session/\d+~', $route ) ):
+				$order = new WC_Order( $request->get_param( 'id' ) );
+				$result = $this->service->create_session();
+
+				if ( $order->meta_exists( '_mpgs_session_id' ) ) {
+					$order->update_meta_data( '_mpgs_session_id', $result['session']['id'] );
+				} else {
+					$order->add_meta_data( '_mpgs_session_id', $result['session']['id'], true );
+				}
+				$order->save_meta_data();
+				break;
+
 			case '/mastercard/v1/webhook':
 				break;
 		}
@@ -703,6 +818,13 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	public function get_hosted_session_js() {
 		return sprintf( 'https://%s/form/%s/merchant/%s/session.js', $this->get_gateway_url(), self::MPGS_API_VERSION,
 			$this->get_merchant_id() );
+	}
+
+	/**
+	 * @return string
+	 */
+	public function get_threeds_js() {
+		return sprintf( 'https://%s/static/threeDS/1.3.0/three-ds.min.js', $this->get_gateway_url() );
 	}
 
 	/**
@@ -825,10 +947,15 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			'threedsecure'       => array(
 				'title'       => __( '3D-Secure', 'mastercard' ),
 				'label'       => __( 'Use 3D-Secure', 'mastercard' ),
-				'type'        => 'checkbox',
+				'type'        => 'select',
+				'options'     => array(
+					self::THREED_DISABLED => __('Disabled'),
+					self::THREED_V1 => __('3DS1'),
+					self::THREED_V2 => __('3DS2 (with fallback to 3DS1)'),
+				),
+				'default'     => self::THREED_DISABLED,
 				'description' => __( 'For more information please contact your payment service provider.',
 					'mastercard' ),
-				'default'     => 'yes',
 			),
 			'hc_type'            => array(
 				'title'   => __( 'Checkout Interaction', 'mastercard' ),
