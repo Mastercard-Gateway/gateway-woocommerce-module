@@ -34,7 +34,7 @@
 </script>
 <script type="text/javascript">
     function errorCallback(error) {
-        let err = JSON.stringify(error);
+        var err = JSON.stringify(error);
         console.error(err);
         alert('Error: ' + JSON.stringify(error));
     }
@@ -61,7 +61,7 @@
         }
 
         function configureHostedCheckout(sessionData) {
-            let config = {
+            var config = {
                 merchant: '<?php echo $gateway->get_merchant_id() ?>',
                 session: {
                     id: sessionData.session.id,
@@ -75,7 +75,7 @@
             });
         }
 
-        let xhr = $.ajax({
+        var xhr = $.ajax({
             method: 'GET',
             url: '<?php echo $gateway->get_create_checkout_session_url( $order->get_id() ) ?>',
             dataType: 'json'

@@ -156,7 +156,7 @@
             var txnId = '3DS-' + new Date().getTime().toString();
 
             ThreeDS.initiateAuthentication(
-                '<?php echo $order->get_id() ?>',
+                '<?php echo $gateway->add_order_prefix($order->get_id()) ?>',
                 txnId,
                 function (data) {
                     authenticatePayer(txnId, data);
@@ -184,7 +184,7 @@
                 switch (data.gatewayRecommendation) {
                     case "PROCEED":
                         ThreeDS.authenticatePayer(
-                            '<?php echo $order->get_id() ?>',
+                            '<?php echo $gateway->add_order_prefix($order->get_id()) ?>',
                             txnId,
                             displayChallengeAuth,
                             {

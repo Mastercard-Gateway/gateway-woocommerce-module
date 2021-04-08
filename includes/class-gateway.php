@@ -49,6 +49,11 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	const THREED_V2 = '2';
 
 	/**
+	 * @var string
+	 */
+	protected $order_prefix;
+
+	/**
 	 * @var bool
 	 */
 	protected $sandbox;
@@ -118,6 +123,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		$this->init_form_fields();
 		$this->init_settings();
 
+		$this->order_prefix = $this->get_option( 'order_prefix' );
 		$this->title        = $this->get_option( 'title' );
 		$this->description  = $this->get_option( 'description' );
 		$this->enabled      = $this->get_option( 'enabled', false );
@@ -237,7 +243,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			throw new Exception( 'Order already captured' );
 		}
 
-		$result = $this->service->captureTxn( $order->get_id(), time(), $order->get_total(), $order->get_currency() );
+		$result = $this->service->captureTxn( $this->add_order_prefix($order->get_id()), time(), $order->get_total(), $order->get_currency() );
 
 		$txn = $result['transaction'];
 		$order->add_order_note( sprintf( __( 'Mastercard payment CAPTURED (ID: %s, Auth Code: %s)', 'mastercard' ),
@@ -274,7 +280,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	 */
 	public function process_refund( $order_id, $amount = null, $reason = '' ) {
 		$order  = new WC_Order( $order_id );
-		$result = $this->service->refund( $order_id, (string) time(), $amount, $order->get_currency() );
+		$result = $this->service->refund( $this->add_order_prefix($order_id), (string) time(), $amount, $order->get_currency() );
 		$order->add_order_note( sprintf(
 			__( 'Mastercard registered refund %s %s (ID: %s)', 'mastercard' ),
 			$result['transaction']['amount'],
@@ -298,7 +304,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			if ($_REQUEST['response_gatewayRecommendation'] === 'PROCEED') {
 				$three_ds_txn_id = $_REQUEST['transaction_id'];
 			} else {
-				$order = new WC_Order( $_REQUEST['order_id'] );
+				$order = new WC_Order( $this->remove_order_prefix($_REQUEST['order_id']) );
 				$order->update_status( 'failed', __( '3DS authorization was not provided. Payment declined.', 'mastercard' ) );
 				wc_add_notice( __( '3DS authorization was not provided. Payment declined.', 'mastercard' ), 'error' );
 				wp_redirect( wc_get_checkout_url() );
@@ -321,7 +327,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	 * @throws \Http\Client\Exception
 	 */
 	protected function process_hosted_checkout_payment() {
-		$order_id          = $_REQUEST['order_id'];
+		$order_id          = $this->remove_order_prefix($_REQUEST['order_id']);
 		$result_indicator  = $_REQUEST['resultIndicator'];
 		$order             = new WC_Order( $order_id );
 		$success_indicator = $order->get_meta( '_mpgs_success_indicator' );
@@ -331,7 +337,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				throw new Exception( 'Result indicator mismatch' );
 			}
 
-			$mpgs_order = $this->service->retrieveOrder( $order_id );
+			$mpgs_order = $this->service->retrieveOrder( $this->add_order_prefix($order_id) );
 			if ( $mpgs_order['result'] !== 'SUCCESS' ) {
 				throw new Exception( 'Payment was declined.' );
 			}
@@ -380,7 +386,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	 * @throws \Http\Client\Exception
 	 */
 	protected function process_hosted_session_payment($three_ds_txn_id = null) {
-		$order_id        = $_REQUEST['order_id'];
+		$order_id        = $this->remove_order_prefix($_REQUEST['order_id']);
 		$session_id      = $_REQUEST['session_id'];
 		$session_version = isset($_REQUEST['session_version']) ? $_REQUEST['session_version'] : null;
 
@@ -508,7 +514,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			if ( $this->capture ) {
 				$mpgs_txn = $this->service->pay(
 					$txn_id,
-					$order->get_id(),
+					$this->add_order_prefix($order->get_id()),
 					$order_builder->getOrder(),
 					$auth,
 					$tds_id,
@@ -520,7 +526,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			} else {
 				$mpgs_txn = $this->service->authorize(
 					$txn_id,
-					$order->get_id(),
+                    $this->add_order_prefix($order->get_id()),
 					$order_builder->getOrder(),
 					$auth,
 					$tds_id,
@@ -1018,6 +1024,12 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				'type'    => 'password',
 				'default' => '',
 			),
+            'order_prefix'      => array(
+                'title'         => __('Order ID prefix', 'mastercard'),
+                'type'          => 'text',
+                'description'   => __('Should be specified in case multiple integrations use the same Merchant ID', 'mastercard'),
+                'default'       => ''
+            )
 		);
 	}
 
@@ -1033,4 +1045,30 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 
 		return $is_available;
 	}
+
+    /**
+     * @param string $order_id
+     * @return string
+     */
+    public function remove_order_prefix($order_id)
+    {
+        if ($this->order_prefix && strpos($order_id, $this->order_prefix) === 0) {
+            $order_id = substr($order_id, strlen($this->order_prefix));
+        }
+
+        return $order_id;
+    }
+
+    /**
+     * @param string $order_id
+     * @return string
+     */
+	public function add_order_prefix($order_id)
+    {
+        if ($this->order_prefix) {
+            $order_id = $this->order_prefix . $order_id;
+        }
+
+        return $order_id;
+    }
 }

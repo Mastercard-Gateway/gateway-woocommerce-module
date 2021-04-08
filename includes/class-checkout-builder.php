@@ -22,7 +22,7 @@ class Mastercard_CheckoutBuilder {
 	 */
 	protected $order;
 
-	/**
+    /**
 	 * Mastercard_Model_AbstractBuilder constructor.
 	 *
 	 * @param WC_Order $order
@@ -130,8 +130,9 @@ class Mastercard_CheckoutBuilder {
 	 * @return array
 	 */
 	public function getHostedCheckoutOrder() {
+        $gateway = new Mastercard_Gateway();
 		return array_merge(array(
-			'id'          => (string) $this->order->get_id(),
+			'id'          => (string) $gateway->add_order_prefix($this->order->get_id()),
 			'description' => 'Ordered goods'
 		), $this->getOrder());
 	}
