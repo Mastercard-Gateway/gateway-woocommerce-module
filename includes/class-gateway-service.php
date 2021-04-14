@@ -484,9 +484,10 @@ class Mastercard_GatewayService {
 		$authentication = array(),
 		$token = array()
 	) {
+        $gateway = new Mastercard_Gateway();
 		$uri = $this->apiUrl . 'session/' . $session_id;
 		$params = array(
-			'order_id' => $order['id'],
+			'order_id' => $gateway->remove_order_prefix($order['id']),
 			'session_id' => $session_id
 		);
 
