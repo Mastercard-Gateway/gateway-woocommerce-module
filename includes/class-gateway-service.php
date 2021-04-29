@@ -437,18 +437,23 @@ class Mastercard_GatewayService {
 		$billing = array(),
 		$shipping = array()
 	) {
+        $txnId = uniqid(sprintf('%s-', $order['id']));
 		$uri = $this->apiUrl . 'session';
 
 		$request = $this->messageFactory->createRequest( 'POST', $uri, array(), json_encode( array(
 			'apiOperation'      => 'CREATE_CHECKOUT_SESSION',
 			'partnerSolutionId' => $this->getSolutionId(),
 			'order'             => array_merge( $order, array(
-				'notificationUrl' => $this->webhookUrl
+				'notificationUrl' => $this->webhookUrl,
+                'reference'       => $order['id']
 			) ),
 			'billing'           => $billing,
 			'shipping'          => $shipping,
 			'interaction'       => $interaction,
 			'customer'          => $customer,
+            'transaction'       => [
+                'reference'     => $txnId
+            ]
 		) ) );
 
 		$response = $this->client->sendRequest( $request );
@@ -579,12 +584,16 @@ class Mastercard_GatewayService {
 			'3DSecureId'        => $tds_id,
 			'partnerSolutionId' => $this->getSolutionId(),
 			'order'             => array_merge( $order, array(
-				'notificationUrl' => $this->webhookUrl
+				'notificationUrl' => $this->webhookUrl,
+                'reference'       => $orderId,
 			) ),
 			'billing'           => $billing,
 			'shipping'          => $shipping,
 			'customer'          => $customer,
 			'session'           => $session,
+            'transaction'       => [
+                'reference'     => $txnId
+            ]
 		) ) );
 
 		$response = $this->client->sendRequest( $request );
@@ -636,12 +645,16 @@ class Mastercard_GatewayService {
 			'3DSecureId'        => $tds_id,
 			'partnerSolutionId' => $this->getSolutionId(),
 			'order'             => array_merge( $order, array(
-				'notificationUrl' => $this->webhookUrl
+				'notificationUrl' => $this->webhookUrl,
+                'reference'       => $orderId
 			) ),
 			'billing'           => $billing,
 			'shipping'          => $shipping,
 			'customer'          => $customer,
 			'session'           => $session,
+            'transaction'       => [
+                'reference'     => $txnId
+            ]
 		) ) );
 
 		$response = $this->client->sendRequest( $request );
@@ -765,7 +778,8 @@ class Mastercard_GatewayService {
 			'apiOperation'      => 'VOID',
 			'partnerSolutionId' => $this->getSolutionId(),
 			'transaction'       => array(
-				'targetTransactionId' => $txnId
+				'targetTransactionId' => $txnId,
+                'reference' => $txnId,
 			)
 		) ) );
 		$response = $this->client->sendRequest( $request );
@@ -803,10 +817,12 @@ class Mastercard_GatewayService {
 			'partnerSolutionId' => $this->getSolutionId(),
 			'transaction'       => array(
 				'amount'   => $amount,
-				'currency' => $currency
+				'currency' => $currency,
+                'reference'=> $newTxnId,
 			),
 			'order'             => array(
-				'notificationUrl' => $this->webhookUrl
+				'notificationUrl' => $this->webhookUrl,
+                'reference'       => $orderId,
 			)
 		) ) );
 
@@ -844,10 +860,12 @@ class Mastercard_GatewayService {
 			'partnerSolutionId' => $this->getSolutionId(),
 			'transaction'       => array(
 				'amount'   => $amount,
-				'currency' => $currency
+				'currency' => $currency,
+                'reference'=> $newTxnId,
 			),
 			'order'             => array(
-				'notificationUrl' => $this->webhookUrl
+				'notificationUrl' => $this->webhookUrl,
+                'reference'       => $orderId,
 			)
 		) ) );
 
