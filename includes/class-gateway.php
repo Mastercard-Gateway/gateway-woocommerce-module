@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2019-2020 Mastercard
+ * Copyright (c) 2019-2021 Mastercard
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -123,18 +123,18 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		$this->init_form_fields();
 		$this->init_settings();
 
-		$this->order_prefix = $this->get_option( 'order_prefix' );
-		$this->title        = $this->get_option( 'title' );
-		$this->description  = $this->get_option( 'description' );
-		$this->enabled      = $this->get_option( 'enabled', false );
-		$this->hc_type      = $this->get_option( 'hc_type', self::HC_TYPE_MODAL );
-		$this->capture      = $this->get_option( 'txn_mode',
-			self::TXN_MODE_PURCHASE ) == self::TXN_MODE_PURCHASE;
+		$this->order_prefix    = $this->get_option( 'order_prefix' );
+		$this->title           = $this->get_option( 'title' );
+		$this->description     = $this->get_option( 'description' );
+		$this->enabled         = $this->get_option( 'enabled', false );
+		$this->hc_type         = $this->get_option( 'hc_type', self::HC_TYPE_MODAL );
+		$this->capture         = $this->get_option( 'txn_mode',
+				self::TXN_MODE_PURCHASE ) == self::TXN_MODE_PURCHASE;
 		$this->threedsecure_v1 = $this->get_option( 'threedsecure', self::THREED_DISABLED ) == self::THREED_V1;
 		$this->threedsecure_v2 = $this->get_option( 'threedsecure', self::THREED_DISABLED ) == self::THREED_V2;
-		$this->method       = $this->get_option( 'method', self::HOSTED_CHECKOUT );
-		$this->saved_cards  = $this->get_option( 'saved_cards', 'yes' ) == 'yes';
-		$this->supports     = array(
+		$this->method          = $this->get_option( 'method', self::HOSTED_CHECKOUT );
+		$this->saved_cards     = $this->get_option( 'saved_cards', 'yes' ) == 'yes';
+		$this->supports        = array(
 			'products',
 			'refunds',
 			'tokenization',
@@ -243,7 +243,12 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			throw new Exception( 'Order already captured' );
 		}
 
-		$result = $this->service->captureTxn( $this->add_order_prefix($order->get_id()), time(), $order->get_total(), $order->get_currency() );
+		$result = $this->service->captureTxn(
+			$this->add_order_prefix( $order->get_id() ),
+			time(),
+			$this->get_payment_amount( $order ),
+			$order->get_currency()
+		);
 
 		$txn = $result['transaction'];
 		$order->add_order_note( sprintf( __( 'Mastercard payment CAPTURED (ID: %s, Auth Code: %s)', 'mastercard' ),
@@ -280,7 +285,12 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	 */
 	public function process_refund( $order_id, $amount = null, $reason = '' ) {
 		$order  = new WC_Order( $order_id );
-		$result = $this->service->refund( $this->add_order_prefix($order_id), (string) time(), $amount, $order->get_currency() );
+		$result = $this->service->refund(
+			$this->add_order_prefix( $order_id ),
+			(string) time(),
+			$amount,
+			$order->get_currency()
+		);
 		$order->add_order_note( sprintf(
 			__( 'Mastercard registered refund %s %s (ID: %s)', 'mastercard' ),
 			$result['transaction']['amount'],
@@ -300,12 +310,13 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		header( 'HTTP/1.1 200 OK' );
 
 		$three_ds_txn_id = null;
-		if (isset($_REQUEST['response_gatewayRecommendation'])) {
-			if ($_REQUEST['response_gatewayRecommendation'] === 'PROCEED') {
+		if ( isset( $_REQUEST['response_gatewayRecommendation'] ) ) {
+			if ( $_REQUEST['response_gatewayRecommendation'] === 'PROCEED' ) {
 				$three_ds_txn_id = $_REQUEST['transaction_id'];
 			} else {
-				$order = new WC_Order( $this->remove_order_prefix($_REQUEST['order_id']) );
-				$order->update_status( 'failed', __( '3DS authorization was not provided. Payment declined.', 'mastercard' ) );
+				$order = new WC_Order( $this->remove_order_prefix( $_REQUEST['order_id'] ) );
+				$order->update_status( 'failed',
+					__( '3DS authorization was not provided. Payment declined.', 'mastercard' ) );
 				wc_add_notice( __( '3DS authorization was not provided. Payment declined.', 'mastercard' ), 'error' );
 				wp_redirect( wc_get_checkout_url() );
 				exit();
@@ -314,7 +325,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 
 		if ( $this->method === self::HOSTED_SESSION ) {
 //			WC()->cart->empty_cart();
-			$this->process_hosted_session_payment($three_ds_txn_id);
+			$this->process_hosted_session_payment( $three_ds_txn_id );
 		}
 
 		if ( $this->method === self::HOSTED_CHECKOUT ) {
@@ -327,7 +338,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	 * @throws \Http\Client\Exception
 	 */
 	protected function process_hosted_checkout_payment() {
-		$order_id          = $this->remove_order_prefix($_REQUEST['order_id']);
+		$order_id          = $this->remove_order_prefix( $_REQUEST['order_id'] );
 		$result_indicator  = $_REQUEST['resultIndicator'];
 		$order             = new WC_Order( $order_id );
 		$success_indicator = $order->get_meta( '_mpgs_success_indicator' );
@@ -337,7 +348,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				throw new Exception( 'Result indicator mismatch' );
 			}
 
-			$mpgs_order = $this->service->retrieveOrder( $this->add_order_prefix($order_id) );
+			$mpgs_order = $this->service->retrieveOrder( $this->add_order_prefix( $order_id ) );
 			if ( $mpgs_order['result'] !== 'SUCCESS' ) {
 				throw new Exception( 'Payment was declined.' );
 			}
@@ -383,18 +394,19 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 
 	/**
 	 * @param string|null $three_ds_txn_id
+	 *
 	 * @throws \Http\Client\Exception
 	 */
-	protected function process_hosted_session_payment($three_ds_txn_id = null) {
-		$order_id        = $this->remove_order_prefix($_REQUEST['order_id']);
+	protected function process_hosted_session_payment( $three_ds_txn_id = null ) {
+		$order_id        = $this->remove_order_prefix( $_REQUEST['order_id'] );
 		$session_id      = $_REQUEST['session_id'];
-		$session_version = isset($_REQUEST['session_version']) ? $_REQUEST['session_version'] : null;
+		$session_version = isset( $_REQUEST['session_version'] ) ? $_REQUEST['session_version'] : null;
 
 		$session = array(
 			'id' => $session_id
 		);
 
-		if ($session_version === null) {
+		if ( $session_version === null ) {
 			$session['version'] = $session_version;
 		}
 
@@ -416,7 +428,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				'id' => $session_id
 			);
 			$orderData = array(
-				'amount'   => $order->get_total(),
+				'amount'   => $this->get_payment_amount( $order ),
 				'currency' => $order->get_currency()
 			);
 
@@ -503,8 +515,8 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			$order->save_meta_data();
 
 			$auth = null;
-			if ($this->threedsecure_v2) {
-				$auth = [
+			if ( $this->threedsecure_v2 ) {
+				$auth   = [
 					'transactionId' => $tds_id
 				];
 				$tds_id = null;
@@ -514,7 +526,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			if ( $this->capture ) {
 				$mpgs_txn = $this->service->pay(
 					$txn_id,
-					$this->add_order_prefix($order->get_id()),
+					$this->add_order_prefix( $order->get_id() ),
 					$order_builder->getOrder(),
 					$auth,
 					$tds_id,
@@ -526,7 +538,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			} else {
 				$mpgs_txn = $this->service->authorize(
 					$txn_id,
-                    $this->add_order_prefix($order->get_id()),
+					$this->add_order_prefix( $order->get_id() ),
 					$order_builder->getOrder(),
 					$auth,
 					$tds_id,
@@ -544,7 +556,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			$this->process_wc_order( $order, $mpgs_txn['order'], $mpgs_txn );
 
 			if ( $this->saved_cards && $order->get_meta( '_save_card' ) ) {
-				$this->process_saved_cards( $session, $order->get_user_id('system') );
+				$this->process_saved_cards( $session, $order->get_user_id( 'system' ) );
 			}
 
 			wp_redirect( $this->get_return_url( $order ) );
@@ -626,7 +638,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		if ( $order->get_currency() !== $mpgs_order['currency'] ) {
 			throw new Exception( 'Currency mismatch' );
 		}
-		if ( (float) $order->get_total() !== $mpgs_order['amount'] ) {
+		if ( (float) $this->get_payment_amount( $order ) !== (float) $mpgs_order['amount'] ) {
 			throw new Exception( 'Amount mismatch' );
 		}
 
@@ -758,23 +770,23 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				}
 
 				$auth = array();
-				if ($this->threedsecure_v1) {
+				if ( $this->threedsecure_v1 ) {
 					$auth = array(
 						'acceptVersions' => '3DS1'
 					);
 				}
 
-				if ($this->threedsecure_v2) {
+				if ( $this->threedsecure_v2 ) {
 					$auth = array(
 						'channel' => 'PAYER_BROWSER',
 						'purpose' => 'PAYMENT_TRANSACTION',
 					);
 				}
 
-				$session_id = $order->get_meta('_mpgs_session_id');
+				$session_id = $order->get_meta( '_mpgs_session_id' );
 
 				$order_builder = new Mastercard_CheckoutBuilder( $order );
-				$result = $this->service->update_session(
+				$result        = $this->service->update_session(
 					$session_id,
 					$order_builder->getHostedCheckoutOrder(),
 					$order_builder->getCustomer(),
@@ -793,7 +805,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				break;
 
 			case ( (bool) preg_match( '~/mastercard/v1/session/\d+~', $route ) ):
-				$order = new WC_Order( $request->get_param( 'id' ) );
+				$order  = new WC_Order( $request->get_param( 'id' ) );
 				$result = $this->service->create_session();
 
 				if ( $order->meta_exists( '_mpgs_session_id' ) ) {
@@ -955,9 +967,9 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				'label'       => __( 'Use 3D-Secure', 'mastercard' ),
 				'type'        => 'select',
 				'options'     => array(
-					self::THREED_DISABLED => __('Disabled'),
-					self::THREED_V1 => __('3DS1'),
-					self::THREED_V2 => __('3DS2 (with fallback to 3DS1)'),
+					self::THREED_DISABLED => __( 'Disabled' ),
+					self::THREED_V1       => __( '3DS1' ),
+					self::THREED_V2       => __( '3DS2 (with fallback to 3DS1)' ),
 				),
 				'default'     => self::THREED_DISABLED,
 				'description' => __( 'For more information please contact your payment service provider.',
@@ -1024,12 +1036,13 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				'type'    => 'password',
 				'default' => '',
 			),
-            'order_prefix'      => array(
-                'title'         => __('Order ID prefix', 'mastercard'),
-                'type'          => 'text',
-                'description'   => __('Should be specified in case multiple integrations use the same Merchant ID', 'mastercard'),
-                'default'       => ''
-            )
+			'order_prefix'       => array(
+				'title'       => __( 'Order ID prefix', 'mastercard' ),
+				'type'        => 'text',
+				'description' => __( 'Should be specified in case multiple integrations use the same Merchant ID',
+					'mastercard' ),
+				'default'     => ''
+			)
 		);
 	}
 
@@ -1046,29 +1059,38 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		return $is_available;
 	}
 
-    /**
-     * @param string $order_id
-     * @return string
-     */
-    public function remove_order_prefix($order_id)
-    {
-        if ($this->order_prefix && strpos($order_id, $this->order_prefix) === 0) {
-            $order_id = substr($order_id, strlen($this->order_prefix));
-        }
+	/**
+	 * @param string $order_id
+	 *
+	 * @return string
+	 */
+	public function remove_order_prefix( $order_id ) {
+		if ( $this->order_prefix && strpos( $order_id, $this->order_prefix ) === 0 ) {
+			$order_id = substr( $order_id, strlen( $this->order_prefix ) );
+		}
 
-        return $order_id;
-    }
+		return $order_id;
+	}
 
-    /**
-     * @param string $order_id
-     * @return string
-     */
-	public function add_order_prefix($order_id)
-    {
-        if ($this->order_prefix) {
-            $order_id = $this->order_prefix . $order_id;
-        }
+	/**
+	 * @param string $order_id
+	 *
+	 * @return string
+	 */
+	public function add_order_prefix( $order_id ) {
+		if ( $this->order_prefix ) {
+			$order_id = $this->order_prefix . $order_id;
+		}
 
-        return $order_id;
-    }
+		return $order_id;
+	}
+
+	/**
+	 * @param WC_Order $order
+	 *
+	 * @return float
+	 */
+	protected function get_payment_amount( $order ) {
+		return round( $order->get_total(), 2 );
+	}
 }
