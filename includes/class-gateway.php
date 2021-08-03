@@ -1091,6 +1091,9 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	 * @return float
 	 */
 	protected function get_payment_amount( $order ) {
-		return round( $order->get_total(), 2 );
+		return round(
+			$order->get_total(),
+			wc_get_price_decimals()
+		);
 	}
 }
