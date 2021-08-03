@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2019-2020 Mastercard
+ * Copyright (c) 2019-2021 Mastercard
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ class Mastercard_CheckoutBuilder {
 	 */
 	protected $order;
 
-    /**
+	/**
 	 * Mastercard_Model_AbstractBuilder constructor.
 	 *
 	 * @param WC_Order $order
@@ -43,16 +43,16 @@ class Mastercard_CheckoutBuilder {
 	/**
 	 * @param $value
 	 * @param int $limited
+	 *
 	 * @return bool|string|null
 	 */
-	public static function safe($value, $limited = 0)
-	{
-		if ($value === "") {
+	public static function safe( $value, $limited = 0 ) {
+		if ( $value === "" ) {
 			return null;
 		}
 
-		if ($limited > 0 && strlen($value) > $limited) {
-			return substr($value, 0, $limited);
+		if ( $limited > 0 && strlen( $value ) > $limited ) {
+			return substr( $value, 0, $limited );
 		}
 
 		return $value;
@@ -76,14 +76,15 @@ class Mastercard_CheckoutBuilder {
 
 	/**
 	 * @param WC_Order $order
+	 *
 	 * @return bool
 	 */
-	public function orderIsVirtual($order) {
-		if (empty($this->order->get_shipping_address_1())) {
+	public function orderIsVirtual( $order ) {
+		if ( empty( $this->order->get_shipping_address_1() ) ) {
 			return true;
 		}
 
-		if (empty($this->order->get_shipping_first_name())) {
+		if ( empty( $this->order->get_shipping_first_name() ) ) {
 			return true;
 		}
 
@@ -95,7 +96,7 @@ class Mastercard_CheckoutBuilder {
 	 */
 	public function getShipping() {
 
-		if ($this->orderIsVirtual($this->order)) {
+		if ( $this->orderIsVirtual( $this->order ) ) {
 			return null;
 		}
 
@@ -109,8 +110,8 @@ class Mastercard_CheckoutBuilder {
 				'stateProvince' => self::safe( $this->order->get_shipping_state(), 20 )
 			),
 			'contact' => array(
-				'firstName' => self::safe($this->order->get_shipping_first_name(), 50),
-				'lastName'  => self::safe($this->order->get_shipping_last_name(), 50),
+				'firstName' => self::safe( $this->order->get_shipping_first_name(), 50 ),
+				'lastName'  => self::safe( $this->order->get_shipping_last_name(), 50 ),
 			),
 		);
 	}
@@ -121,8 +122,8 @@ class Mastercard_CheckoutBuilder {
 	public function getCustomer() {
 		return array(
 			'email'     => $this->order->get_billing_email(),
-			'firstName' => self::safe($this->order->get_billing_first_name(), 50),
-			'lastName'  => self::safe($this->order->get_billing_last_name(), 50),
+			'firstName' => self::safe( $this->order->get_billing_first_name(), 50 ),
+			'lastName'  => self::safe( $this->order->get_billing_last_name(), 50 ),
 		);
 	}
 
@@ -130,39 +131,53 @@ class Mastercard_CheckoutBuilder {
 	 * @return array
 	 */
 	public function getHostedCheckoutOrder() {
-        $gateway = new Mastercard_Gateway();
-		return array_merge(array(
-			'id'          => (string) $gateway->add_order_prefix($this->order->get_id()),
+		$gateway = new Mastercard_Gateway();
+
+		return array_merge( array(
+			'id'          => (string) $gateway->add_order_prefix( $this->order->get_id() ),
 			'description' => 'Ordered goods'
-		), $this->getOrder());
+		), $this->getOrder() );
 	}
 
 	public function getOrder() {
 		return array(
-			'amount'      => (float) $this->order->get_total(),
-			'currency'    => get_woocommerce_currency(),
+			'amount'   => $this->get_payment_amount( $this->order ),
+			'currency' => get_woocommerce_currency(),
 		);
 	}
 
 	/**
 	 * @param bool $capture
 	 * @param string|null $returnUrl
+	 *
 	 * @return array
 	 */
-	public function getInteraction($capture = true, $returnUrl = null) {
+	public function getInteraction( $capture = true, $returnUrl = null ) {
 		return array(
-			'operation' => $capture ? 'PURCHASE' : 'AUTHORIZE',
-			'merchant'  => array(
+			'operation'      => $capture ? 'PURCHASE' : 'AUTHORIZE',
+			'merchant'       => array(
 				'name' => esc_html( get_bloginfo( 'name', 'display' ) )
 			),
-			'returnUrl' => $returnUrl,
+			'returnUrl'      => $returnUrl,
 			'displayControl' => array(
-				'shipping' => 'HIDE',
-				'billingAddress' => 'HIDE',
-				'orderSummary' => 'HIDE',
+				'shipping'            => 'HIDE',
+				'billingAddress'      => 'HIDE',
+				'orderSummary'        => 'HIDE',
 				'paymentConfirmation' => 'HIDE',
-				'customerEmail' => 'HIDE'
+				'customerEmail'       => 'HIDE'
 			)
+		);
+	}
+
+	/**
+	 * @param WC_Order $order
+	 *
+	 * @return float
+	 */
+	protected function get_payment_amount( $order ) {
+		return round(
+			$order->get_total(),
+			wc_get_price_decimals()
 		);
 	}
 }
