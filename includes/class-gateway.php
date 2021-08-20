@@ -246,7 +246,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		$result = $this->service->captureTxn(
 			$this->add_order_prefix( $order->get_id() ),
 			time(),
-			(float) $this->order->get_total(),
+			(float) $order->get_total(),
 			$order->get_currency()
 		);
 
@@ -639,7 +639,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			throw new Exception( 'Currency mismatch' );
 		}
 
-		if ( (float) $this->order->get_total() !== (float) $mpgs_order['amount'] ) {
+		if ( (float) $order->get_total() !== (float) $mpgs_order['amount'] ) {
 			throw new Exception( 'Amount mismatch' );
 		}
 
