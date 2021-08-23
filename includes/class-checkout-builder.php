@@ -141,7 +141,7 @@ class Mastercard_CheckoutBuilder {
 
 	public function getOrder() {
 		return array(
-			'amount'   => $this->get_payment_amount( $this->order ),
+			'amount'   => (float) $this->order->get_total(),
 			'currency' => get_woocommerce_currency(),
 		);
 	}
@@ -166,18 +166,6 @@ class Mastercard_CheckoutBuilder {
 				'paymentConfirmation' => 'HIDE',
 				'customerEmail'       => 'HIDE'
 			)
-		);
-	}
-
-	/**
-	 * @param WC_Order $order
-	 *
-	 * @return float
-	 */
-	protected function get_payment_amount( $order ) {
-		return round(
-			$order->get_total(),
-			wc_get_price_decimals()
 		);
 	}
 }
