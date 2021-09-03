@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2019-2020 Mastercard
+ * Copyright (c) 2019-2021 Mastercard
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -437,24 +437,26 @@ class Mastercard_GatewayService {
 		$billing = array(),
 		$shipping = array()
 	) {
-        $txnId = uniqid(sprintf('%s-', $order['id']));
-		$uri = $this->apiUrl . 'session';
+		$txnId = uniqid( sprintf( '%s-', $order['id'] ) );
+		$uri   = $this->apiUrl . 'session';
 
-		$request = $this->messageFactory->createRequest( 'POST', $uri, array(), json_encode( array(
+		$requestData = array(
 			'apiOperation'      => 'CREATE_CHECKOUT_SESSION',
 			'partnerSolutionId' => $this->getSolutionId(),
 			'order'             => array_merge( $order, array(
 				'notificationUrl' => $this->webhookUrl,
-                'reference'       => $order['id']
+				'reference'       => $order['id']
 			) ),
 			'billing'           => $billing,
 			'shipping'          => $shipping,
 			'interaction'       => $interaction,
 			'customer'          => $customer,
-            'transaction'       => [
-                'reference'     => $txnId
-            ]
-		) ) );
+			'transaction'       => [
+				'reference' => $txnId
+			]
+		);
+
+		$request = $this->messageFactory->createRequest( 'POST', $uri, array(), json_encode( $requestData ) );
 
 		$response = $this->client->sendRequest( $request );
 		$response = json_decode( $response->getBody(), true );
@@ -489,22 +491,22 @@ class Mastercard_GatewayService {
 		$authentication = array(),
 		$token = array()
 	) {
-        $gateway = new Mastercard_Gateway();
-		$uri = $this->apiUrl . 'session/' . $session_id;
-		$params = array(
-			'order_id' => $gateway->remove_order_prefix($order['id']),
+		$gateway = new Mastercard_Gateway();
+		$uri     = $this->apiUrl . 'session/' . $session_id;
+		$params  = array(
+			'order_id'   => $gateway->remove_order_prefix( $order['id'] ),
 			'session_id' => $session_id
 		);
 
-		if (!empty($authentication) && !isset($authentication['acceptVersions'])) {
+		if ( ! empty( $authentication ) && ! isset( $authentication['acceptVersions'] ) ) {
 			$authentication['redirectResponseUrl'] = add_query_arg(
-                 'wc-api',
-                 Mastercard_Gateway::class,
-                 home_url( '/' )
-             ) . '&' . http_build_query( $params );
+				                                         'wc-api',
+				                                         Mastercard_Gateway::class,
+				                                         home_url( '/' )
+			                                         ) . '&' . http_build_query( $params );
 		}
 
-		$request = $this->messageFactory->createRequest( 'PUT', $uri, array(), json_encode( array(
+		$requestData = array(
 			'partnerSolutionId' => $this->getSolutionId(),
 			'order'             => array_merge( $order, array(
 				'notificationUrl' => $this->webhookUrl
@@ -512,11 +514,16 @@ class Mastercard_GatewayService {
 			'billing'           => $billing,
 			'shipping'          => $shipping,
 			'customer'          => $customer,
-			'authentication'    => $authentication,
 			'sourceOfFunds'     => array_merge( $token, array(
 				'type' => 'CARD'
 			) ),
-		) ) );
+		);
+
+		if ( ! empty( $authentication ) ) {
+			$requestData['authentication'] = $authentication;
+		}
+
+		$request = $this->messageFactory->createRequest( 'PUT', $uri, array(), json_encode( $requestData ) );
 
 		$response = $this->client->sendRequest( $request );
 		$response = json_decode( $response->getBody(), true );
@@ -538,11 +545,11 @@ class Mastercard_GatewayService {
 	 * @return array
 	 * @throws Exception
 	 */
-	public function create_session()
-	{
-		$uri = $this->apiUrl . 'session';
-		$request = $this->messageFactory->createRequest( 'POST', $uri, array() );
+	public function create_session() {
+		$uri      = $this->apiUrl . 'session';
+		$request  = $this->messageFactory->createRequest( 'POST', $uri, array() );
 		$response = $this->client->sendRequest( $request );
+
 		return json_decode( $response->getBody(), true );
 	}
 
@@ -578,23 +585,28 @@ class Mastercard_GatewayService {
 	) {
 		$uri = $this->apiUrl . 'order/' . $orderId . '/transaction/' . $txnId;
 
-		$request = $this->messageFactory->createRequest( 'PUT', $uri, array(), json_encode( array(
+		$requestData = array(
 			'apiOperation'      => 'AUTHORIZE',
-			'authentication'    => $authentication,
 			'3DSecureId'        => $tds_id,
 			'partnerSolutionId' => $this->getSolutionId(),
 			'order'             => array_merge( $order, array(
 				'notificationUrl' => $this->webhookUrl,
-                'reference'       => $orderId,
+				'reference'       => $orderId,
 			) ),
 			'billing'           => $billing,
 			'shipping'          => $shipping,
 			'customer'          => $customer,
 			'session'           => $session,
-            'transaction'       => [
-                'reference'     => $txnId
-            ]
-		) ) );
+			'transaction'       => [
+				'reference' => $txnId
+			]
+		);
+
+		if ( ! empty( $authentication ) ) {
+			$requestData['authentication'] = $authentication;
+		}
+
+		$request = $this->messageFactory->createRequest( 'PUT', $uri, array(), json_encode( $requestData ) );
 
 		$response = $this->client->sendRequest( $request );
 		$response = json_decode( $response->getBody(), true );
@@ -639,23 +651,28 @@ class Mastercard_GatewayService {
 	) {
 		$uri = $this->apiUrl . 'order/' . $orderId . '/transaction/' . $txnId;
 
-		$request = $this->messageFactory->createRequest( 'PUT', $uri, array(), json_encode( array(
+		$requestData = array(
 			'apiOperation'      => 'PAY',
-			'authentication'    => $authentication,
 			'3DSecureId'        => $tds_id,
 			'partnerSolutionId' => $this->getSolutionId(),
 			'order'             => array_merge( $order, array(
 				'notificationUrl' => $this->webhookUrl,
-                'reference'       => $orderId
+				'reference'       => $orderId
 			) ),
 			'billing'           => $billing,
 			'shipping'          => $shipping,
 			'customer'          => $customer,
 			'session'           => $session,
-            'transaction'       => [
-                'reference'     => $txnId
-            ]
-		) ) );
+			'transaction'       => [
+				'reference' => $txnId
+			]
+		);
+
+		if ( ! empty( $authentication ) ) {
+			$requestData['authentication'] = $authentication;
+		}
+
+		$request = $this->messageFactory->createRequest( 'PUT', $uri, array(), json_encode( $requestData ) );
 
 		$response = $this->client->sendRequest( $request );
 		$response = json_decode( $response->getBody(), true );
@@ -779,7 +796,7 @@ class Mastercard_GatewayService {
 			'partnerSolutionId' => $this->getSolutionId(),
 			'transaction'       => array(
 				'targetTransactionId' => $txnId,
-                'reference' => $txnId,
+				'reference'           => $txnId,
 			)
 		) ) );
 		$response = $this->client->sendRequest( $request );
@@ -816,13 +833,13 @@ class Mastercard_GatewayService {
 			'apiOperation'      => 'CAPTURE',
 			'partnerSolutionId' => $this->getSolutionId(),
 			'transaction'       => array(
-				'amount'   => $amount,
-				'currency' => $currency,
-                'reference'=> $newTxnId,
+				'amount'    => $amount,
+				'currency'  => $currency,
+				'reference' => $newTxnId,
 			),
 			'order'             => array(
 				'notificationUrl' => $this->webhookUrl,
-                'reference'       => $orderId,
+				'reference'       => $orderId,
 			)
 		) ) );
 
@@ -859,13 +876,13 @@ class Mastercard_GatewayService {
 			'apiOperation'      => 'REFUND',
 			'partnerSolutionId' => $this->getSolutionId(),
 			'transaction'       => array(
-				'amount'   => $amount,
-				'currency' => $currency,
-                'reference'=> $newTxnId,
+				'amount'    => $amount,
+				'currency'  => $currency,
+				'reference' => $newTxnId,
 			),
 			'order'             => array(
 				'notificationUrl' => $this->webhookUrl,
-                'reference'       => $orderId,
+				'reference'       => $orderId,
 			)
 		) ) );
 
