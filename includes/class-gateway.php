@@ -26,8 +26,8 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 
 	const ID = 'mpgs_gateway';
 
-	const MPGS_API_VERSION = 'version/58';
-	const MPGS_API_VERSION_NUM = '58';
+	const MPGS_API_VERSION = 'version/61';
+	const MPGS_API_VERSION_NUM = '61';
 
 	const HOSTED_SESSION = 'hostedsession';
 	const HOSTED_CHECKOUT = 'hostedcheckout';
@@ -505,14 +505,8 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	 */
 	protected function pay( $session, $order, $tds_id = null ) {
 		try {
-			if ( ! $order->meta_exists( '_txn_id' ) ) {
-				$txn_id = '1';
-				$order->add_meta_data( '_txn_id', $txn_id );
-			} else {
-				$txn_id = (string) ( (int) $order->get_meta( '_txn_id' ) + 1 );
-				$order->update_meta_data( '_txn_id', $txn_id );
-			}
-			$order->save_meta_data();
+			$txn_id = $this->generate_txn_id_for_order( $order );
+
 
 			$auth = null;
 			if ( $this->threedsecure_v2 ) {
@@ -1096,5 +1090,43 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			$order->get_total(),
 			wc_get_price_decimals()
 		);
+	}
+
+	/**
+	 * @param WC_Order $order
+	 */
+	protected function generate_txn_id_for_order( $order ) {
+
+		if ( ! $order->meta_exists( '_txn_id' ) ) {
+			$txn_id = $this->compose_new_transaction_id(1, $order);
+			$order->add_meta_data( '_txn_id', $txn_id );
+		} else {
+			$old_txn_id = $order->get_meta( '_txn_id' );
+			$txn_id_pattern = '/(?<order_id>.*\-)?(?<txn_id>\d+)$/';
+			preg_match($txn_id_pattern, $old_txn_id, $matches);
+
+			$txn_id_num = (int)$matches['txn_id'] ?? 1;
+			$txn_id = $this->compose_new_transaction_id($txn_id_num + 1, $order);
+			$order->update_meta_data( '_txn_id', $txn_id );
+		}
+
+		$order->save_meta_data();
+
+		return $txn_id;
+	}
+
+	/**
+	 * @param int $txn_id
+	 * @param WC_Order $order
+	 *
+	 * @return string
+	 */
+	protected function compose_new_transaction_id( $txn_id, $order ) {
+		if ( $this->order_prefix ) {
+			$order_id = $this->order_prefix;
+		}
+		$order_id .= $order->get_id();
+
+		return sprintf( '%s-%s', $order_id, $txn_id);
 	}
 }
