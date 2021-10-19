@@ -1,4 +1,6 @@
 {
+    "version": "1.2.0",
+    "type": "woocommerce-plugin",
     "require": {
         "php-http/curl-client": "^1.7",
         "php-http/client-common": "^1.9",

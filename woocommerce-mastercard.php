@@ -9,7 +9,7 @@
  */
 
 /**
- * Copyright (c) 2019-2020 Mastercard
+ * Copyright (c) 2019-2021 Mastercard
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,10 +74,10 @@ class WC_Mastercard {
 
 		add_action( 'rest_api_init', function () {
 			register_rest_route( 'mastercard/v1', '/checkoutSession/(?P<id>\d+)', array(
-				'methods'  => 'GET',
-				'callback' => [ $this, 'rest_route_forward' ],
-                'permission_callback' => array( $this, 'get_items_permissions_check' ),
-				'args'     => array(
+				'methods'             => 'GET',
+				'callback'            => [ $this, 'rest_route_forward' ],
+				'permission_callback' => array( $this, 'get_items_permissions_check' ),
+				'args'                => array(
 					'id' => array(
 						'validate_callback' => function ( $param, $request, $key ) {
 							return is_numeric( $param );
@@ -86,10 +86,10 @@ class WC_Mastercard {
 				)
 			) );
 			register_rest_route( 'mastercard/v1', '/session/(?P<id>\d+)', array(
-				'methods'  => 'GET',
-				'callback' => [ $this, 'rest_route_forward' ],
-                'permission_callback' => array( $this, 'get_items_permissions_check' ),
-				'args'     => array(
+				'methods'             => 'GET',
+				'callback'            => [ $this, 'rest_route_forward' ],
+				'permission_callback' => array( $this, 'get_items_permissions_check' ),
+				'args'                => array(
 					'id' => array(
 						'validate_callback' => function ( $param, $request, $key ) {
 							return is_numeric( $param );
@@ -98,10 +98,10 @@ class WC_Mastercard {
 				)
 			) );
 			register_rest_route( 'mastercard/v1', '/savePayment/(?P<id>\d+)', array(
-				'methods'  => 'POST',
-				'callback' => [ $this, 'rest_route_forward' ],
-                'permission_callback' => array( $this, 'get_items_permissions_check' ),
-				'args'     => array(
+				'methods'             => 'POST',
+				'callback'            => [ $this, 'rest_route_forward' ],
+				'permission_callback' => array( $this, 'get_items_permissions_check' ),
+				'args'                => array(
 					'id' => array(
 						'validate_callback' => function ( $param, $request, $key ) {
 							return is_numeric( $param );
@@ -110,20 +110,21 @@ class WC_Mastercard {
 				)
 			) );
 			register_rest_route( 'mastercard/v1', '/webhook', array(
-				'methods'  => 'GET',
-				'callback' => [ $this, 'rest_route_forward' ],
-                'permission_callback' => array( $this, 'get_items_permissions_check' ),
+				'methods'             => 'GET',
+				'callback'            => [ $this, 'rest_route_forward' ],
+				'permission_callback' => array( $this, 'get_items_permissions_check' ),
 			) );
 		} );
 	}
 
-    /**
-     * @param $request
-     * @return bool
-     */
-    public function get_items_permissions_check( $request ) {
-        return true;
-    }
+	/**
+	 * @param $request
+	 *
+	 * @return bool
+	 */
+	public function get_items_permissions_check( $request ) {
+		return true;
+	}
 
 	/**
 	 * @param WP_REST_Request $request
