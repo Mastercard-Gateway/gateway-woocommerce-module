@@ -95,7 +95,6 @@ class Mastercard_CheckoutBuilder {
 	 * @return array|null
 	 */
 	public function getShipping() {
-
 		if ( $this->orderIsVirtual( $this->order ) ) {
 			return null;
 		}
