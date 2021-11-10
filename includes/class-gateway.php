@@ -504,9 +504,13 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	 * @throws \Http\Client\Exception
 	 */
 	protected function pay( $session, $order, $tds_id = null ) {
+		if ($this->is_order_paid($order)) {
+			wp_redirect( $this->get_return_url( $order ) );
+			exit();
+		}
+
 		try {
 			$txn_id = $this->generate_txn_id_for_order( $order );
-
 
 			$auth = null;
 			if ( $this->threedsecure_v2 ) {
@@ -609,6 +613,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 
 		$captured = $order_data['status'] === 'CAPTURED';
 		$order->add_meta_data( '_mpgs_order_captured', $captured );
+		$order->add_meta_data( '_mpgs_order_paid', 1 );
 
 		$order->payment_complete( $txn_data['transaction']['id'] );
 
@@ -1128,5 +1133,14 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		$order_id .= $order->get_id();
 
 		return sprintf( '%s-%s', $order_id, $txn_id);
+	}
+
+	/**
+	 * @param WC_Order $order
+	 *
+	 * @return bool
+	 */
+	protected function is_order_paid( WC_Order $order ) {
+		return (bool)$order->get_meta('_mpgs_order_paid', 0);
 	}
 }
