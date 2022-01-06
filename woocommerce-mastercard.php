@@ -5,7 +5,7 @@
  * Plugin URI: https://github.com/Mastercard-Gateway/gateway-woocommerce-module/
  * Author: OnTap Networks Ltd.
  * Author URI: https://www.ontapgroup.com/
- * Version: 1.2.0
+ * Version: 1.2.1
  */
 
 /**

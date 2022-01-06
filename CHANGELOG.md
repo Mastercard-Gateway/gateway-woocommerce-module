@@ -1,6 +1,11 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [1.2.1] - 2021-12-01
+### Fixed
+- Fixed an error "invalid request" for Order if Customer clicks Browser Back button from Order Success Page
+
+
 ## [1.2.0] - 2021-10-19
 ### Changed
 - Add support for the "Enforce Unique Order Reference" and "Enforce Unique Merchant Transaction Reference" gateway features
