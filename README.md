@@ -20,6 +20,21 @@ and with PHP versions:
 - Customer Phone Number
 - Customer Email Address
 - Cart Line Items (optional)
+
+## Feature Support
+
+WooCommerce Mastercard Payment Gateway Service module supports following list of features:
+
+- Card payments
+- Alternative payment methods
+- Hosted Session
+- Hosted Checkout
+- Full refunds
+- Partial refunds
+- AVS
+- 3DSv1
+- 3DSv2
+
 ## Obtain the module
 You can obtain the module by downloading a release from: https://github.com/Mastercard-Gateway/gateway-woocommerce-module/releases
 ## Installation of Module
