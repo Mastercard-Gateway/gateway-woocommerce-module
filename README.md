@@ -35,6 +35,11 @@ WooCommerce Mastercard Payment Gateway Service module supports following list of
 - 3DSv1
 - 3DSv2
 
+## Documentation
+
+The official documentation for this module is available on: [http://ontap.wiki/woocommerce-mastercard-payment-gateway-services](http://ontap.wiki/woocommerce-mastercard-payment-gateway-services)
+
+
 ## Obtain the module
 You can obtain the module by downloading a release from: https://github.com/Mastercard-Gateway/gateway-woocommerce-module/releases
 ## Installation of Module
