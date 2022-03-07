@@ -17,10 +17,8 @@ The module has been tested with the WordPress versions:
 - 5.2.4
 - 5.3.2
 - 5.6
-
-and with PHP versions:
-- 7.2
-- 7.3
+- 5.7.2
+- 5.9.1
 
 ## Customer Information Shared with Gateway
 
