@@ -34,6 +34,7 @@ WooCommerce Mastercard Payment Gateway Service module supports following list of
 - AVS
 - 3DSv1
 - 3DSv2
+- Tokenisation
 
 ## Documentation
 
