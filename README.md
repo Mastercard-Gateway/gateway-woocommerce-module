@@ -1,20 +1,29 @@
 # Mastercard Payment Gateway Services module for WooCommerce
+
 ## Compatibility
 The module has been tested with the WooCommerce versions:
+
 - 3.9.3
 - 4.0
 - 4.8
+- 5.1.0
+- 5.5.1
+- 5.5.2
+- 6.0.0
+- 6.2.1
 
 The module has been tested with the WordPress versions:
+
 - 5.2.4
 - 5.3.2
 - 5.6
+- 5.7.2
+- 5.9.1
 
-and with PHP versions:
-- 7.2
-- 7.3
 ## Customer Information Shared with Gateway
+
 ### This module shares the following customer information with the gateway:
+
 - Customer Billing and Shipping Address
 - Customer Name
 - Customer Phone Number
@@ -34,6 +43,12 @@ WooCommerce Mastercard Payment Gateway Service module supports following list of
 - AVS
 - 3DSv1
 - 3DSv2
+- Tokenisation
+
+## Documentation
+
+The official documentation for this module is available on: [http://ontap.wiki/woocommerce-mastercard-payment-gateway-services](http://ontap.wiki/woocommerce-mastercard-payment-gateway-services)
+
 
 ## Obtain the module
 You can obtain the module by downloading a release from: https://github.com/Mastercard-Gateway/gateway-woocommerce-module/releases
