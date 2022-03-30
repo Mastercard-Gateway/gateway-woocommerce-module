@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021 Mastercard
+ * Copyright (c) 2019-2022 Mastercard
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ jQuery(function ($) {
                 password = $('#woocommerce_mpgs_gateway_password').parents('tr').eq(0),
                 threedsecure = $('#woocommerce_mpgs_gateway_threedsecure').parents('tr').eq(0),
                 gateway_url = $('#woocommerce_mpgs_gateway_custom_gateway_url').parents('tr').eq(0),
+                hc_interaction = $('#woocommerce_mpgs_gateway_hc_interaction').parents('tr').eq(0),
                 hc_type = $('#woocommerce_mpgs_gateway_hc_type').parents('tr').eq(0),
                 saved_cards = $('#woocommerce_mpgs_gateway_saved_cards').parents('tr').eq(0);
 
@@ -42,14 +43,23 @@ jQuery(function ($) {
             }).change();
 
             $('#woocommerce_mpgs_gateway_method').on('change', function () {
-                if ($(this).val() === 'hostedcheckout') {
+                if ($(this).val() === 'newhostedcheckout') {
                     // Hosted Checkout
                     threedsecure.hide();
+                    hc_interaction.show();
+                    hc_type.hide();
+                    saved_cards.hide();
+                } else if ($(this).val() === 'hostedcheckout') {
+                    // Legacy Hosted Checkout
+                    // @todo Remove after removal of Legacy Hosted Checkout
+                    threedsecure.hide();
+                    hc_interaction.hide();
                     hc_type.show();
                     saved_cards.hide();
                 } else {
                     // Hosted Session
                     threedsecure.show();
+                    hc_interaction.hide();
                     hc_type.hide();
                     saved_cards.show();
                 }
