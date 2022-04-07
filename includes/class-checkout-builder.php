@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2019-2021 Mastercard
+ * Copyright (c) 2019-2022 Mastercard
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -152,6 +152,30 @@ class Mastercard_CheckoutBuilder {
 	 * @return array
 	 */
 	public function getInteraction( $capture = true, $returnUrl = null ) {
+		return array(
+			'merchant'       => array(
+				'name' => esc_html( get_bloginfo( 'name', 'display' ) )
+			),
+			'returnUrl'      => $returnUrl,
+			'displayControl' => array(
+				'customerEmail'  => 'HIDE',
+				'billingAddress' => 'HIDE',
+				'paymentTerms'   => 'HIDE',
+				'shipping'       => 'HIDE',
+			),
+			'operation'      => $capture ? 'PURCHASE' : 'AUTHORIZE',
+		);
+	}
+
+	/**
+	 * @param bool $capture
+	 * @param string|null $returnUrl
+	 *
+	 * @return array
+	 * @deprecated
+	 *
+	 */
+	public function getLegacyInteraction( $capture = true, $returnUrl = null ) {
 		return array(
 			'operation'      => $capture ? 'PURCHASE' : 'AUTHORIZE',
 			'merchant'       => array(

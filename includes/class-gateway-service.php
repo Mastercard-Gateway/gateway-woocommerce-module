@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2019-2021 Mastercard
+ * Copyright (c) 2019-2022 Mastercard
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -413,6 +413,61 @@ class Mastercard_GatewayService {
 		return $response;
 	}
 
+
+	/**
+	 * Initiate Checkout
+	 * Request to create a session identifier for the checkout interaction.
+	 * The session identifier, when included in the Checkout.configure() function,
+	 * allows you to return the payer to the merchant's website after completing the payment attempt.
+	 * https://mtf.gateway.mastercard.com/api/rest/version/63/merchant/{merchantId}/session
+	 *
+	 * @param array $order
+	 * @param array $interaction
+	 * @param array $customer
+	 * @param array $billing
+	 * @param array $shipping
+	 *
+	 * @return array
+	 * @throws Exception
+	 * @throws Mastercard_GatewayResponseException
+	 */
+	public function initiateCheckout(
+		$order = array(),
+		$interaction = array(),
+		$customer = array(),
+		$billing = array(),
+		$shipping = array()
+	) {
+		$txnId = uniqid( sprintf( '%s-', $order['id'] ) );
+		$uri   = $this->apiUrl . 'session';
+
+		$requestData = array(
+			'apiOperation'      => 'INITIATE_CHECKOUT',
+			'partnerSolutionId' => $this->getSolutionId(),
+			'order'             => array_merge( $order, array(
+				'notificationUrl' => $this->webhookUrl,
+				'reference'       => $order['id']
+			) ),
+			'billing'           => $billing,
+			'shipping'          => $shipping,
+			'interaction'       => $interaction,
+			'customer'          => $customer,
+			'transaction'       => [
+				'reference' => $txnId,
+				'source'    => 'INTERNET',
+			]
+		);
+
+		$request = $this->messageFactory->createRequest( 'POST', $uri, array(), json_encode( $requestData ) );
+
+		$response = $this->client->sendRequest( $request );
+		$response = json_decode( $response->getBody(), true );
+
+		$this->validateCheckoutSessionResponse( $response );
+
+		return $response;
+	}
+
 	/**
 	 * Create Checkout Session
 	 * Request to create a session identifier for the checkout interaction.
@@ -429,6 +484,8 @@ class Mastercard_GatewayService {
 	 * @return array
 	 * @throws Exception
 	 * @throws Mastercard_GatewayResponseException
+	 *
+	 * @todo Remove with Legacy Hosted Checkout
 	 */
 	public function createCheckoutSession(
 		$order = array(),
@@ -452,7 +509,8 @@ class Mastercard_GatewayService {
 			'interaction'       => $interaction,
 			'customer'          => $customer,
 			'transaction'       => [
-				'reference' => $txnId
+				'reference' => $txnId,
+				'source'    => 'INTERNET',
 			]
 		);
 
@@ -598,7 +656,8 @@ class Mastercard_GatewayService {
 			'customer'          => $customer,
 			'session'           => $session,
 			'transaction'       => [
-				'reference' => $txnId
+				'reference' => $txnId,
+				'source'    => 'INTERNET',
 			]
 		);
 
@@ -664,7 +723,8 @@ class Mastercard_GatewayService {
 			'customer'          => $customer,
 			'session'           => $session,
 			'transaction'       => [
-				'reference' => $txnId
+				'reference' => $txnId,
+				'source'    => 'INTERNET',
 			]
 		);
 
