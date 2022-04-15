@@ -16,7 +16,7 @@
  *
  */
 
-define( 'MPGS_MODULE_VERSION', '1.2.0' );
+define( 'MPGS_MODULE_VERSION', '1.2.1' );
 
 require_once dirname( __FILE__ ) . '/class-checkout-builder.php';
 require_once dirname( __FILE__ ) . '/class-gateway-service.php';
