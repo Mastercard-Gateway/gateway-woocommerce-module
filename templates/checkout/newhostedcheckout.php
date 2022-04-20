@@ -44,18 +44,27 @@
     }
 
     (function ($) {
-		<?php if ( ! $gateway->use_embedded() ): ?>
+        var sessionKeysToClear = [];
+
+        function cleanupBrowserSession() {
+            var sessionKey, i;
+            for (i = 0; i < sessionKeysToClear.length; i++) {
+                sessionKey = sessionKeysToClear[i];
+                if (sessionStorage.key(sessionKey)) {
+                    sessionStorage.removeItem(sessionKey);
+                }
+            }
+        }
+
+		<?php if ( $gateway->use_embedded() ): ?>
+        sessionKeysToClear.push('HostedCheckout_sessionId');
+        <?php else: ?>
+        sessionKeysToClear.push('HostedCheckout_embedContainer');
+
         function togglePay() {
             $('#mpgs_pay').prop('disabled', function (i, v) {
                 return !v;
             });
-        }
-
-        function cleanupBrowserSession() {
-            let embeddedContainerKey = 'HostedCheckout_embedContainer';
-            if (sessionStorage.key(embeddedContainerKey)) {
-                sessionStorage.removeItem(embeddedContainerKey);
-            }
         }
 		<?php endif; ?>
 
@@ -77,12 +86,10 @@
             };
 
             waitFor('Checkout', function () {
-				<?php if ( $gateway->use_embedded() ): ?>
-                Checkout.configure(config);
-                Checkout.showEmbeddedPage('#embed-target');
-                <?php else: ?>
                 cleanupBrowserSession();
                 Checkout.configure(config);
+				<?php if ( $gateway->use_embedded() ): ?>
+                Checkout.showEmbeddedPage('#embed-target');
                 togglePay();
 				<?php endif; ?>
             });
