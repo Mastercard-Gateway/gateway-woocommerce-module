@@ -56,7 +56,7 @@
             }
         }
 
-		<?php if ( $gateway->use_embedded() ): ?>
+        <?php if ( $gateway->use_embedded() ): ?>
         sessionKeysToClear.push('HostedCheckout_sessionId');
         <?php else: ?>
         sessionKeysToClear.push('HostedCheckout_embedContainer');
@@ -66,7 +66,7 @@
                 return !v;
             });
         }
-		<?php endif; ?>
+        <?php endif; ?>
 
         function waitFor(name, callback) {
             if (typeof window[name] === "undefined") {
@@ -88,10 +88,11 @@
             waitFor('Checkout', function () {
                 cleanupBrowserSession();
                 Checkout.configure(config);
-				<?php if ( $gateway->use_embedded() ): ?>
+                <?php if ( $gateway->use_embedded() ): ?>
                 Checkout.showEmbeddedPage('#embed-target');
+                <?php else: ?>
                 togglePay();
-				<?php endif; ?>
+                <?php endif; ?>
             });
         }
 
@@ -101,9 +102,9 @@
             dataType: 'json'
         });
 
-		<?php if ( ! $gateway->use_embedded() ): ?>
+        <?php if ( ! $gateway->use_embedded() ): ?>
         togglePay();
-		<?php endif; ?>
+        <?php endif; ?>
 
         $.when(xhr)
             .done($.proxy(configureHostedCheckout, this))
