@@ -1,6 +1,14 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [1.3.0] - 2022-06-17
+### Changed
+- New Hosted Checkout integration is introduced
+
+### Fixed
+- The version of the plugin is displayed incorrectly in the Admin Panel
+
+
 ## [1.2.1] - 2021-12-01
 ### Fixed
 - Fixed an error "invalid request" for Order if Customer clicks Browser Back button from Order Success Page
