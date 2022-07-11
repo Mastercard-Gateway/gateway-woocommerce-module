@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2019-2021 Mastercard
+ * Copyright (c) 2019-2022 Mastercard
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
  *
  */
 
-define( 'MPGS_MODULE_VERSION', '1.2.0' );
+define( 'MPGS_MODULE_VERSION', '1.3.0' );
 
 require_once dirname( __FILE__ ) . '/class-checkout-builder.php';
 require_once dirname( __FILE__ ) . '/class-gateway-service.php';
@@ -26,19 +26,23 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 
 	const ID = 'mpgs_gateway';
 
-	const MPGS_API_VERSION = 'version/61';
-	const MPGS_API_VERSION_NUM = '61';
+	const MPGS_API_VERSION = 'version/63';
+	const MPGS_API_VERSION_NUM = '63';
+
+	const MPGS_LEGACY_API_VERSION = 'version/61';
+	const MPGS_LEGACY_API_VERSION_NUM = '61';
 
 	const HOSTED_SESSION = 'hostedsession';
-	const HOSTED_CHECKOUT = 'hostedcheckout';
+	const HOSTED_CHECKOUT = 'newhostedcheckout';
+	const LEGACY_HOSTED_CHECKOUT = 'hostedcheckout';
 
 	const HC_TYPE_REDIRECT = 'redirect';
 	const HC_TYPE_MODAL = 'modal';
+	const HC_TYPE_EMBEDDED = 'embedded';
 
 	const API_EU = 'eu-gateway.mastercard.com';
 	const API_AS = 'ap-gateway.mastercard.com';
 	const API_NA = 'na-gateway.mastercard.com';
-	//const API_UAT = 'secure.uat.tnspayments.com';
 	const API_CUSTOM = 'custom';
 
 	const TXN_MODE_PURCHASE = 'capture';
@@ -80,6 +84,13 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 
 	/**
 	 * @var string
+	 */
+	protected $hc_interaction;
+
+	/**
+	 * @var string
+	 *
+	 * @todo Remove after removal of Legacy Hosted Checkout
 	 */
 	protected $hc_type;
 
@@ -128,10 +139,10 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		$this->description     = $this->get_option( 'description' );
 		$this->enabled         = $this->get_option( 'enabled', false );
 		$this->hc_type         = $this->get_option( 'hc_type', self::HC_TYPE_MODAL );
-		$this->capture         = $this->get_option( 'txn_mode',
-				self::TXN_MODE_PURCHASE ) == self::TXN_MODE_PURCHASE;
-		$this->threedsecure_v1 = $this->get_option( 'threedsecure', self::THREED_DISABLED ) == self::THREED_V1;
-		$this->threedsecure_v2 = $this->get_option( 'threedsecure', self::THREED_DISABLED ) == self::THREED_V2;
+		$this->hc_interaction  = $this->get_option( 'hc_interaction', self::HC_TYPE_EMBEDDED );
+		$this->capture         = $this->get_option( 'txn_mode', self::TXN_MODE_PURCHASE ) === self::TXN_MODE_PURCHASE;
+		$this->threedsecure_v1 = $this->get_option( 'threedsecure', self::THREED_DISABLED ) === self::THREED_V1;
+		$this->threedsecure_v2 = $this->get_option( 'threedsecure', self::THREED_DISABLED ) === self::THREED_V2;
 		$this->method          = $this->get_option( 'method', self::HOSTED_CHECKOUT );
 		$this->saved_cards     = $this->get_option( 'saved_cards', 'yes' ) == 'yes';
 		$this->supports        = array(
@@ -169,12 +180,21 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 
 		return new Mastercard_GatewayService(
 			$this->get_gateway_url(),
-			self::MPGS_API_VERSION,
+			$this->get_api_version(),
 			$this->username,
 			$this->password,
 			$this->get_webhook_url(),
 			$loggingLevel
 		);
+	}
+
+	/**
+	 * @return bool
+	 */
+	protected function is_legacy_hosted_checkout() {
+		$method = $this->get_option( 'method', self::HOSTED_CHECKOUT );
+
+		return $method === 'hostedcheckout';
 	}
 
 	/**
@@ -324,12 +344,13 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		}
 
 		if ( $this->method === self::HOSTED_SESSION ) {
-//			WC()->cart->empty_cart();
 			$this->process_hosted_session_payment( $three_ds_txn_id );
 		}
 
-		if ( $this->method === self::HOSTED_CHECKOUT ) {
-//			WC()->cart->empty_cart();
+		/**
+		 * @todo Remove branching after Legacy Hosted Checkout removal
+		 */
+		if ( in_array( $this->method, array( self::HOSTED_CHECKOUT, self::LEGACY_HOSTED_CHECKOUT ), true ) ) {
 			$this->process_hosted_checkout_payment();
 		}
 	}
@@ -504,7 +525,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	 * @throws \Http\Client\Exception
 	 */
 	protected function pay( $session, $order, $tds_id = null ) {
-		if ($this->is_order_paid($order)) {
+		if ( $this->is_order_paid( $order ) ) {
 			wp_redirect( $this->get_return_url( $order ) );
 			exit();
 		}
@@ -618,11 +639,21 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		$order->payment_complete( $txn_data['transaction']['id'] );
 
 		if ( $captured ) {
-			$order->add_order_note( sprintf( __( 'Mastercard payment CAPTURED (ID: %s, Auth Code: %s)', 'mastercard' ),
-				$txn_data['transaction']['id'], $txn_data['transaction']['authorizationCode'] ) );
+			$order->add_order_note(
+				sprintf(
+					__( 'Mastercard payment CAPTURED (ID: %s, Auth Code: %s)', 'mastercard' ),
+					$txn_data['transaction']['id'],
+					$txn_data['transaction']['authorizationCode']
+				)
+			);
 		} else {
-			$order->add_order_note( sprintf( __( 'Mastercard payment AUTHORIZED (ID: %s, Auth Code: %s)',
-				'mastercard' ), $txn_data['transaction']['id'], $txn_data['transaction']['authorizationCode'] ) );
+			$order->add_order_note(
+				sprintf(
+					__( 'Mastercard payment AUTHORIZED (ID: %s, Auth Code: %s)', 'mastercard' ),
+					$txn_data['transaction']['id'],
+					$txn_data['transaction']['authorizationCode']
+				)
+			);
 		}
 	}
 
@@ -662,6 +693,15 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	/**
 	 * @return bool
 	 */
+	public function use_embedded() {
+		return $this->hc_interaction === self::HC_TYPE_EMBEDDED;
+	}
+
+	/**
+	 * @return bool
+	 *
+	 * @todo remove after removal of Legacy Hosted Checkout
+	 */
 	public function use_modal() {
 		return $this->hc_type === self::HC_TYPE_MODAL;
 	}
@@ -689,9 +729,28 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 
 	/**
 	 * @return int
+	 *
+	 * @todo remove branching with Legacy Hosted Checkout
+	 */
+	public function get_api_version_num() {
+		if ( $this->is_legacy_hosted_checkout() ) {
+			return (int) self::MPGS_LEGACY_API_VERSION_NUM;
+		} else {
+			return (int) self::MPGS_API_VERSION_NUM;
+		}
+	}
+
+	/**
+	 * @return string
+	 *
+	 * @todo remove branching with Legacy Hosted Checkout
 	 */
 	public function get_api_version() {
-		return (int) self::MPGS_API_VERSION_NUM;
+		if ( $this->is_legacy_hosted_checkout() ) {
+			return self::MPGS_LEGACY_API_VERSION;
+		} else {
+			return self::MPGS_API_VERSION;
+		}
 	}
 
 	/**
@@ -744,13 +803,24 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				$returnUrl = $this->get_payment_return_url( $order->get_id() );
 
 				$order_builder = new Mastercard_CheckoutBuilder( $order );
-				$result        = $this->service->createCheckoutSession(
-					$order_builder->getHostedCheckoutOrder(),
-					$order_builder->getInteraction( $this->capture, $returnUrl ),
-					$order_builder->getCustomer(),
-					$order_builder->getBilling(),
-					$order_builder->getShipping()
-				);
+
+				if ( $this->is_legacy_hosted_checkout() ) {
+					$result = $this->service->createCheckoutSession(
+						$order_builder->getHostedCheckoutOrder(),
+						$order_builder->getLegacyInteraction( $this->capture, $returnUrl ),
+						$order_builder->getCustomer(),
+						$order_builder->getBilling(),
+						$order_builder->getShipping()
+					);
+				} else {
+					$result = $this->service->initiateCheckout(
+						$order_builder->getHostedCheckoutOrder(),
+						$order_builder->getInteraction( $this->capture, $returnUrl ),
+						$order_builder->getCustomer(),
+						$order_builder->getBilling(),
+						$order_builder->getShipping()
+					);
+				}
 
 				if ( $order->meta_exists( '_mpgs_success_indicator' ) ) {
 					$order->update_meta_data( '_mpgs_success_indicator', $result['successIndicator'] );
@@ -827,7 +897,18 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	 * @return string
 	 */
 	public function get_hosted_checkout_js() {
-		return sprintf( 'https://%s/checkout/%s/checkout.js', $this->get_gateway_url(), self::MPGS_API_VERSION );
+		if ( $this->is_legacy_hosted_checkout() ) {
+			return sprintf(
+				'https://%s/checkout/%s/checkout.js',
+				$this->get_gateway_url(),
+				$this->get_api_version()
+			);
+		} else {
+			return sprintf(
+				'https://%s/static/checkout/checkout.min.js',
+				$this->get_gateway_url()
+			);
+		}
 	}
 
 	/**
@@ -888,8 +969,10 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			set_query_var( 'cc_form', $cc_form );
 
 			load_template( dirname( __FILE__ ) . '/../templates/checkout/hostedsession.php' );
-		} else {
+		} else if ( $this->is_legacy_hosted_checkout() ) {
 			load_template( dirname( __FILE__ ) . '/../templates/checkout/hostedcheckout.php' );
+		} else {
+			load_template( dirname( __FILE__ ) . '/../templates/checkout/newhostedcheckout.php' );
 		}
 	}
 
@@ -901,8 +984,12 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			'heading'            => array(
 				'title'       => null,
 				'type'        => 'title',
-				'description' => sprintf( __( 'Plugin version: %s<br />API version: %s', 'mastercard' ),
-					MPGS_MODULE_VERSION, self::MPGS_API_VERSION_NUM ),
+				'description' => sprintf(
+					__( 'Plugin version: %s<br />API version: %s<br />Legacy Hosted Checkout API version: %s', 'mastercard' ),
+					MPGS_MODULE_VERSION,
+					self::MPGS_API_VERSION_NUM,
+					self::MPGS_LEGACY_API_VERSION_NUM
+				),
 			),
 			'enabled'            => array(
 				'title'       => __( 'Enable/Disable', 'mastercard' ),
@@ -957,10 +1044,11 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				'title'   => __( 'Integration Model', 'mastercard' ),
 				'type'    => 'select',
 				'options' => array(
-					self::HOSTED_CHECKOUT => __( 'Hosted Checkout', 'mastercard' ),
-					self::HOSTED_SESSION  => __( 'Hosted Session', 'mastercard' ),
+					self::HOSTED_CHECKOUT        => __( 'Hosted Checkout', 'mastercard' ),
+					self::LEGACY_HOSTED_CHECKOUT => __( 'Legacy Hosted Checkout', 'mastercard' ),
+					self::HOSTED_SESSION         => __( 'Hosted Session', 'mastercard' ),
 				),
-				'default' => self::HOSTED_CHECKOUT,
+				'default' => self::LEGACY_HOSTED_CHECKOUT,
 			),
 			'threedsecure'       => array(
 				'title'       => __( '3D-Secure', 'mastercard' ),
@@ -974,6 +1062,15 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				'default'     => self::THREED_DISABLED,
 				'description' => __( 'For more information please contact your payment service provider.',
 					'mastercard' ),
+			),
+			'hc_interaction'            => array(
+				'title'   => __( 'Checkout Interaction', 'mastercard' ),
+				'type'    => 'select',
+				'options' => array(
+					self::HC_TYPE_REDIRECT => __( 'Redirect to Payment Page', 'mastercard' ),
+					self::HC_TYPE_EMBEDDED    => __( 'Embedded', 'mastercard' )
+				),
+				'default' => self::HC_TYPE_EMBEDDED,
 			),
 			'hc_type'            => array(
 				'title'   => __( 'Checkout Interaction', 'mastercard' ),
@@ -1103,15 +1200,15 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	protected function generate_txn_id_for_order( $order ) {
 
 		if ( ! $order->meta_exists( '_txn_id' ) ) {
-			$txn_id = $this->compose_new_transaction_id(1, $order);
+			$txn_id = $this->compose_new_transaction_id( 1, $order );
 			$order->add_meta_data( '_txn_id', $txn_id );
 		} else {
-			$old_txn_id = $order->get_meta( '_txn_id' );
+			$old_txn_id     = $order->get_meta( '_txn_id' );
 			$txn_id_pattern = '/(?<order_id>.*\-)?(?<txn_id>\d+)$/';
-			preg_match($txn_id_pattern, $old_txn_id, $matches);
+			preg_match( $txn_id_pattern, $old_txn_id, $matches );
 
-			$txn_id_num = (int)$matches['txn_id'] ?? 1;
-			$txn_id = $this->compose_new_transaction_id($txn_id_num + 1, $order);
+			$txn_id_num = (int) $matches['txn_id'] ?? 1;
+			$txn_id     = $this->compose_new_transaction_id( $txn_id_num + 1, $order );
 			$order->update_meta_data( '_txn_id', $txn_id );
 		}
 
@@ -1132,7 +1229,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		}
 		$order_id .= $order->get_id();
 
-		return sprintf( '%s-%s', $order_id, $txn_id);
+		return sprintf( '%s-%s', $order_id, $txn_id );
 	}
 
 	/**
@@ -1141,6 +1238,6 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	 * @return bool
 	 */
 	protected function is_order_paid( WC_Order $order ) {
-		return (bool)$order->get_meta('_mpgs_order_paid', 0);
+		return (bool) $order->get_meta( '_mpgs_order_paid', 0 );
 	}
 }

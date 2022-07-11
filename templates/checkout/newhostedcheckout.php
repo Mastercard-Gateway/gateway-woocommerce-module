@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2019-2022 Mastercard
+ * Copyright (c) 2022 Mastercard
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,21 +13,19 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 /**
  * @var Mastercard_Gateway $gateway
  * @var WC_Abstract_Order $order
- *
- * @todo Remove with Legacy Hosted Checkout
  */
 ?>
 
-<?php if ( $gateway->use_modal() ): ?>
-    <input type="button" id="mpgs_pay" value="<?php echo __( 'Pay', 'mastercard' ) ?>" onclick="Checkout.showLightbox();"/>
+<?php if ( $gateway->use_embedded() ): ?>
+    <div id="embed-target"></div>
 <?php else: ?>
-    <input type="button" id="mpgs_pay" value="<?php echo __( 'Pay', 'mastercard' ) ?>" onclick="Checkout.showPaymentPage();"/>
+    <input type="button" id="mpgs_pay" value="<?php echo __( 'Pay', 'mastercard' ) ?>"
+           onclick="Checkout.showPaymentPage();"/>
 <?php endif; ?>
 
 <script async src="<?php echo $gateway->get_hosted_checkout_js() ?>"
@@ -46,11 +44,29 @@
     }
 
     (function ($) {
+        var sessionKeysToClear = [];
+
+        function cleanupBrowserSession() {
+            var sessionKey, i;
+            for (i = 0; i < sessionKeysToClear.length; i++) {
+                sessionKey = sessionKeysToClear[i];
+                if (sessionStorage.key(sessionKey)) {
+                    sessionStorage.removeItem(sessionKey);
+                }
+            }
+        }
+
+        <?php if ( $gateway->use_embedded() ): ?>
+        sessionKeysToClear.push('HostedCheckout_sessionId');
+        <?php else: ?>
+        sessionKeysToClear.push('HostedCheckout_embedContainer');
+
         function togglePay() {
             $('#mpgs_pay').prop('disabled', function (i, v) {
                 return !v;
             });
         }
+        <?php endif; ?>
 
         function waitFor(name, callback) {
             if (typeof window[name] === "undefined") {
@@ -64,16 +80,19 @@
 
         function configureHostedCheckout(sessionData) {
             var config = {
-                merchant: '<?php echo $gateway->get_merchant_id() ?>',
                 session: {
                     id: sessionData.session.id,
-                    version: sessionData.session.version
                 }
             };
 
             waitFor('Checkout', function () {
+                cleanupBrowserSession();
                 Checkout.configure(config);
+                <?php if ( $gateway->use_embedded() ): ?>
+                Checkout.showEmbeddedPage('#embed-target');
+                <?php else: ?>
                 togglePay();
+                <?php endif; ?>
             });
         }
 
@@ -83,7 +102,9 @@
             dataType: 'json'
         });
 
+        <?php if ( ! $gateway->use_embedded() ): ?>
         togglePay();
+        <?php endif; ?>
 
         $.when(xhr)
             .done($.proxy(configureHostedCheckout, this))
