@@ -3,18 +3,6 @@
 ## Compatibility
 The module has been tested with the WooCommerce versions:
 
-- 3.9.3
-- 4.0
-- 4.8
-- 5.1.0
-- 5.5.1
-- 5.5.2
-- 6.0.0
-- 6.2.1
-- 6.4.0
-- 6.5.1
-- 6.6.1
-- 6.7.0
 - 6.8.2
 - 6.9.4
 - 7.0.1 
@@ -51,12 +39,12 @@ The module has been tested with the WordPress versions:
 
 WooCommerce Mastercard Payment Gateway Service module supports following list of features:
 
-- Card payments
-- Alternative payment methods
+- Card Payments
+- Alternative Payment Methods
 - Hosted Session
 - Hosted Checkout
-- Full refunds
-- Partial refunds
+- Full Refunds
+- Partial Refunds
 - 3DSv1
 - 3DSv2
 - Tokenization
