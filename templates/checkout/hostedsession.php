@@ -77,7 +77,7 @@
     }
 
     function mpgsPayWithSelectedInstrument() {
-        var selected = document.querySelectorAll('[name=wc-mpgs_gateway-payment-token]:checked')[0]; console.log(selected);
+        var selected = document.querySelectorAll('[name=wc-mpgs_gateway-payment-token]:checked')[0];
         if (selected === undefined) {
             // Options not displayed at all
             PaymentSession.updateSessionFromForm('card', undefined, 'new');
