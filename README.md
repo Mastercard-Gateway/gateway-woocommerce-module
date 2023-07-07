@@ -3,15 +3,16 @@
 ## Compatibility
 The module has been tested with the WooCommerce versions:
 
-- 3.9.3
-- 4.0
-- 4.8
-- 5.1.0
-- 5.5.1
-- 5.5.2
-- 6.0.0
-- 6.2.1
-- 6.4.0
+- 6.8.2
+- 6.9.4
+- 7.0.1 
+- 7.1.1  
+- 7.2.3
+- 7.3.0
+- 7.4.1 
+- 7.5.1 
+- 7.6.1 
+- 7.7.2
 
 The module has been tested with the WordPress versions:
 
@@ -20,6 +21,9 @@ The module has been tested with the WordPress versions:
 - 5.6
 - 5.7.2
 - 5.9.1
+- 6.0.3
+- 6.1.2
+- 6.2.2
 
 ## Customer Information Shared with Gateway
 
@@ -35,21 +39,21 @@ The module has been tested with the WordPress versions:
 
 WooCommerce Mastercard Payment Gateway Service module supports following list of features:
 
-- Card payments
-- Alternative payment methods
+- Card Payments
+- Alternative Payment Methods
 - Hosted Session
 - Hosted Checkout
-- Full refunds
-- Partial refunds
-- AVS
+- Full Refunds
+- Partial Refunds
 - 3DSv1
 - 3DSv2
 - Tokenization
 
 ## Documentation
+The official documentation for this module is available on: [https://mpgs.fingent.wiki/target/woocommerce-mastercard-payment-gateway-services/installation](https://mpgs.fingent.wiki/target/woocommerce-mastercard-payment-gateway-services/installation/)
 
-The official documentation for this module is available on: [http://ontap.wiki/woocommerce-mastercard-payment-gateway-services](http://ontap.wiki/woocommerce-mastercard-payment-gateway-services)
-
+## Support
+For customer support:[https://mpgsfgs.atlassian.net/servicedesk/customer/portals](https://mpgsfgs.atlassian.net/servicedesk/customer/portals/)
 
 ## Obtain the module
 You can obtain the module by downloading a release from: https://github.com/Mastercard-Gateway/gateway-woocommerce-module/releases
@@ -95,7 +99,7 @@ Once you have installed the MasterCard Payment Gateway Services module, you can 
     - **Gateway** - The payment gateway region, use Custom Gateway Host if one has been provided to you. Four options are available: Europe, Asia Pacific. North America, and Custom URL.
     - **Custom Gateway Host** - This option is available when the "Gateway" option is set to "Custom Gateway Host" . Your Account Manager will tell you if this is needed or not.
     - **Transaction Mode** - In "Purchase" mode, the customer is charged immediately. In Authorize mode, the transaction is only authorized, and the capturing of funds is a manual process performed by you using the Woocommerce admin panel. The Manual capture process is explained in the next section.
-    - **Integration Model** - In "Hosted Checkout" and "Legacy Hosted Checkout", the payer will type their details into the gateway"s payment page. In "Hosted Session", the payer will remain on the woocommerce payment page.
+    - **Integration Model** - In "Hosted Checkout", the payer will type their details into the gateway"s payment page. In "Hosted Session", the payer will remain on the woocommerce payment page.
     - **Checkout Interaction** - This option is available when the "Payment Model" option is set to "Hosted Checkout" or "Legacy Hosted Checkout" and allows to set redirection behavior to the payment gateway. Either "Embedded" or "Redirect to Payment Page" for contemporary version Hosted Checkout or Either "Lightbox" or "Redirect to Payment Page" for Legacy Hosted Checkout.
     - **3D-Secure** - This option is available when the "Payment Model" option is set to "Hosted Session". Tick the checkbox of "Use 3D-Secure" to Enable it. Be sure to Enable 3D-Secure in your Mastercard account. Un-tick it to Disable it. Hosted Checkout will present 3D-Secure authentication when configured by your payment service provider.
     - **Saved Cards** - This option is available when the "Payment Model" option is set to "Hosted Session". Tick the checkbox of "Enable Payment via Saved Cards" to Enable it. If enabled, payer will be able to pay with a previously saved card during checkout. Card details are saved on payment gateway, not on your store. Un-tick it to Disable it.

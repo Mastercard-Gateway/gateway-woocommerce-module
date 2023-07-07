@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2019-2022 Mastercard
+ * Copyright (c) 2019-2023 Mastercard
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
  *
  */
 
-define( 'MPGS_MODULE_VERSION', '1.3.0' );
+define( 'MPGS_MODULE_VERSION', '1.4.0' );
 
 require_once dirname( __FILE__ ) . '/class-checkout-builder.php';
 require_once dirname( __FILE__ ) . '/class-gateway-service.php';
@@ -26,15 +26,11 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 
 	const ID = 'mpgs_gateway';
 
-	const MPGS_API_VERSION = 'version/63';
-	const MPGS_API_VERSION_NUM = '63';
-
-	const MPGS_LEGACY_API_VERSION = 'version/61';
-	const MPGS_LEGACY_API_VERSION_NUM = '61';
+	const MPGS_API_VERSION = 'version/69';
+	const MPGS_API_VERSION_NUM = '69';
 
 	const HOSTED_SESSION = 'hostedsession';
 	const HOSTED_CHECKOUT = 'newhostedcheckout';
-	const LEGACY_HOSTED_CHECKOUT = 'hostedcheckout';
 
 	const HC_TYPE_REDIRECT = 'redirect';
 	const HC_TYPE_MODAL = 'modal';
@@ -191,15 +187,6 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	/**
 	 * @return bool
 	 */
-	protected function is_legacy_hosted_checkout() {
-		$method = $this->get_option( 'method', self::HOSTED_CHECKOUT );
-
-		return $method === 'hostedcheckout';
-	}
-
-	/**
-	 * @return bool
-	 */
 	protected function get_debug_logging_enabled() {
 		if ( $this->sandbox === 'yes' ) {
 			return $this->get_option( 'debug', false ) === 'yes';
@@ -350,7 +337,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 		/**
 		 * @todo Remove branching after Legacy Hosted Checkout removal
 		 */
-		if ( in_array( $this->method, array( self::HOSTED_CHECKOUT, self::LEGACY_HOSTED_CHECKOUT ), true ) ) {
+		if ( in_array( $this->method, array( self::HOSTED_CHECKOUT ), true ) ) {
 			$this->process_hosted_checkout_payment();
 		}
 	}
@@ -371,7 +358,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 
 			$mpgs_order = $this->service->retrieveOrder( $this->add_order_prefix( $order_id ) );
 			if ( $mpgs_order['result'] !== 'SUCCESS' ) {
-				throw new Exception( 'Payment was declined.' );
+				throw new Exception( 'Payment was declined' );
 			}
 
 			$txn = $mpgs_order['transaction'][0];
@@ -733,11 +720,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	 * @todo remove branching with Legacy Hosted Checkout
 	 */
 	public function get_api_version_num() {
-		if ( $this->is_legacy_hosted_checkout() ) {
-			return (int) self::MPGS_LEGACY_API_VERSION_NUM;
-		} else {
-			return (int) self::MPGS_API_VERSION_NUM;
-		}
+		return (int) self::MPGS_API_VERSION_NUM;
 	}
 
 	/**
@@ -746,11 +729,7 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	 * @todo remove branching with Legacy Hosted Checkout
 	 */
 	public function get_api_version() {
-		if ( $this->is_legacy_hosted_checkout() ) {
-			return self::MPGS_LEGACY_API_VERSION;
-		} else {
-			return self::MPGS_API_VERSION;
-		}
+		return self::MPGS_API_VERSION;
 	}
 
 	/**
@@ -803,24 +782,13 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				$returnUrl = $this->get_payment_return_url( $order->get_id() );
 
 				$order_builder = new Mastercard_CheckoutBuilder( $order );
-
-				if ( $this->is_legacy_hosted_checkout() ) {
-					$result = $this->service->createCheckoutSession(
-						$order_builder->getHostedCheckoutOrder(),
-						$order_builder->getLegacyInteraction( $this->capture, $returnUrl ),
-						$order_builder->getCustomer(),
-						$order_builder->getBilling(),
-						$order_builder->getShipping()
-					);
-				} else {
-					$result = $this->service->initiateCheckout(
-						$order_builder->getHostedCheckoutOrder(),
-						$order_builder->getInteraction( $this->capture, $returnUrl ),
-						$order_builder->getCustomer(),
-						$order_builder->getBilling(),
-						$order_builder->getShipping()
-					);
-				}
+				$result = $this->service->initiateCheckout(
+					$order_builder->getHostedCheckoutOrder(),
+					$order_builder->getInteraction( $this->capture, $returnUrl ),
+					$order_builder->getCustomer(),
+					$order_builder->getBilling(),
+					$order_builder->getShipping()
+				);
 
 				if ( $order->meta_exists( '_mpgs_success_indicator' ) ) {
 					$order->update_meta_data( '_mpgs_success_indicator', $result['successIndicator'] );
@@ -897,18 +865,11 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 	 * @return string
 	 */
 	public function get_hosted_checkout_js() {
-		if ( $this->is_legacy_hosted_checkout() ) {
-			return sprintf(
-				'https://%s/checkout/%s/checkout.js',
-				$this->get_gateway_url(),
-				$this->get_api_version()
-			);
-		} else {
-			return sprintf(
-				'https://%s/static/checkout/checkout.min.js',
-				$this->get_gateway_url()
-			);
-		}
+
+		return sprintf(
+			'https://%s/static/checkout/checkout.min.js',
+			$this->get_gateway_url()
+		);
 	}
 
 	/**
@@ -969,8 +930,6 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 			set_query_var( 'cc_form', $cc_form );
 
 			load_template( dirname( __FILE__ ) . '/../templates/checkout/hostedsession.php' );
-		} else if ( $this->is_legacy_hosted_checkout() ) {
-			load_template( dirname( __FILE__ ) . '/../templates/checkout/hostedcheckout.php' );
 		} else {
 			load_template( dirname( __FILE__ ) . '/../templates/checkout/newhostedcheckout.php' );
 		}
@@ -985,10 +944,9 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				'title'       => null,
 				'type'        => 'title',
 				'description' => sprintf(
-					__( 'Plugin version: %s<br />API version: %s<br />Legacy Hosted Checkout API version: %s', 'mastercard' ),
+					__( 'Plugin version: %s<br />API version: %s', 'mastercard' ),
 					MPGS_MODULE_VERSION,
 					self::MPGS_API_VERSION_NUM,
-					self::MPGS_LEGACY_API_VERSION_NUM
 				),
 			),
 			'enabled'            => array(
@@ -1045,10 +1003,9 @@ class Mastercard_Gateway extends WC_Payment_Gateway {
 				'type'    => 'select',
 				'options' => array(
 					self::HOSTED_CHECKOUT        => __( 'Hosted Checkout', 'mastercard' ),
-					self::LEGACY_HOSTED_CHECKOUT => __( 'Legacy Hosted Checkout', 'mastercard' ),
 					self::HOSTED_SESSION         => __( 'Hosted Session', 'mastercard' ),
 				),
-				'default' => self::LEGACY_HOSTED_CHECKOUT,
+				'default' => self::HOSTED_CHECKOUT,
 			),
 			'threedsecure'       => array(
 				'title'       => __( '3D-Secure', 'mastercard' ),

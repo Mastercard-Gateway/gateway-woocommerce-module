@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2019-2022 Mastercard
+ * Copyright (c) 2019-2023 Mastercard
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ use Monolog\Logger;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
+use Http\Promise\Promise;
 
 class Mastercard_ApiErrorPlugin implements Plugin {
 	/**
@@ -59,7 +60,7 @@ class Mastercard_ApiErrorPlugin implements Plugin {
 	/**
 	 * @inheritdoc
 	 */
-	public function handleRequest( \Psr\Http\Message\RequestInterface $request, callable $next, callable $first ) {
+	public function handleRequest( RequestInterface $request, callable $next, callable $first ): Promise {
 		$promise = $next( $request );
 
 		return $promise->then( function ( ResponseInterface $response ) use ( $request ) {
@@ -123,7 +124,7 @@ class Mastercard_ApiLoggerPlugin implements Plugin {
 	/**
 	 * @inheritdoc
 	 */
-	public function handleRequest( \Psr\Http\Message\RequestInterface $request, callable $next, callable $first ) {
+	public function handleRequest( RequestInterface $request, callable $next, callable $first ): Promise {
 		$reqBody = @json_decode( $request->getBody(), true );
 		if ( json_last_error() !== JSON_ERROR_NONE ) {
 			$reqBody = $request->getBody();
@@ -174,10 +175,7 @@ class Mastercard_ApiLoggerPlugin implements Plugin {
 	}
 }
 
-
-class Mastercard_GatewayResponseException extends \Exception {
-
-}
+class Mastercard_GatewayResponseException extends \Exception {}
 
 class Mastercard_GatewayService {
 	/**
@@ -255,13 +253,12 @@ class Mastercard_GatewayService {
 	}
 
 	/**
-	 * Data format is: CART_X.X.X_DEV_X.X.X o e.g MAGENTO_2.0.2_CARTDEV_2.0.0
-	 * where MAGENTO_2.0.2 represents Magento version 2.0.2 and CARTDEV_2.0.0 represents extension developer CARTDEV and extension version 2.0.0
+	 * Get the solutions id.
 	 *
 	 * @return string
 	 */
 	protected function getSolutionId() {
-		return 'WC_' . WC()->version . '_ONTAP_' . MPGS_MODULE_VERSION;
+		return 'WC_' . WC()->version . '_FINGENT_' . MPGS_MODULE_VERSION;
 	}
 
 	/**
@@ -359,7 +356,7 @@ class Mastercard_GatewayService {
 	 * or otherwise of the authentication.
 	 * The 3DS AuthId is required so that merchants can submit payloads multiple times
 	 * without producing duplicates in the database.
-	 * POST https://mtf.gateway.mastercard.com/api/rest/version/50/merchant/{merchantId}/3DSecureId/{3DSecureId}
+	 * POST https://mtf.gateway.mastercard.com/api/rest/version/63/merchant/{merchantId}/3DSecureId/{3DSecureId}
 	 *
 	 * @param string $tds_id
 	 * @param string $paRes
@@ -385,7 +382,7 @@ class Mastercard_GatewayService {
 
 	/**
 	 * Request to check a cardholder's enrollment in the 3DSecure scheme.
-	 * PUT https://mtf.gateway.mastercard.com/api/rest/version/50/merchant/{merchantId}/3DSecureId/{3DSecureId}
+	 * PUT https://mtf.gateway.mastercard.com/api/rest/version/63/merchant/{merchantId}/3DSecureId/{3DSecureId}
 	 *
 	 * @param array $data
 	 * @param array $order
@@ -457,7 +454,7 @@ class Mastercard_GatewayService {
 				'source'    => 'INTERNET',
 			]
 		);
-
+		
 		$request = $this->messageFactory->createRequest( 'POST', $uri, array(), json_encode( $requestData ) );
 
 		$response = $this->client->sendRequest( $request );
@@ -473,7 +470,7 @@ class Mastercard_GatewayService {
 	 * Request to create a session identifier for the checkout interaction.
 	 * The session identifier, when included in the Checkout.configure() function,
 	 * allows you to return the payer to the merchant's website after completing the payment attempt.
-	 * https://mtf.gateway.mastercard.com/api/rest/version/50/merchant/{merchantId}/session
+	 * https://mtf.gateway.mastercard.com/api/rest/version/63/merchant/{merchantId}/session
 	 *
 	 * @param array $order
 	 * @param array $interaction
@@ -526,7 +523,7 @@ class Mastercard_GatewayService {
 
 	/**
 	 * Request to add or update request fields contained in the session.
-	 * PUT    https://test-gateway.mastercard.com/api/rest/version/58/merchant/{merchantId}/session/{sessionId}
+	 * PUT    https://test-gateway.mastercard.com/api/rest/version/63/merchant/{merchantId}/session/{sessionId}
 	 *
 	 * @param $session_id
 	 * @param array $order
@@ -598,7 +595,7 @@ class Mastercard_GatewayService {
 	 * identifier. They may be updated and obtained using the Update Session and
 	 * Retrieve Session operation respectively.
 	 *
-	 * POST https://test-gateway.mastercard.com/api/rest/version/58/merchant/{merchantId}/session
+	 * POST https://test-gateway.mastercard.com/api/rest/version/63/merchant/{merchantId}/session
 	 *
 	 * @return array
 	 * @throws Exception
@@ -615,7 +612,7 @@ class Mastercard_GatewayService {
 	 * Request to obtain an authorization for a proposed funds transfer.
 	 * An authorization is a response from a financial institution indicating that payment information
 	 * is valid and funds are available in the payers account.
-	 * https://mtf.gateway.mastercard.com/api/rest/version/50/merchant/{merchantId}/order/{orderid}/transaction/{transactionid}
+	 * https://mtf.gateway.mastercard.com/api/rest/version/63/merchant/{merchantId}/order/{orderid}/transaction/{transactionid}
 	 *
 	 * @param string $txnId
 	 * @param string $orderId
@@ -682,7 +679,7 @@ class Mastercard_GatewayService {
 	 * Pay is the most common type of payment model used by merchants to accept card payments.
 	 * The Pay model is used when the merchant is allowed to bill the cardholder's account immediately,
 	 * for example when providing services or goods on the spot.
-	 * PUT https://mtf.gateway.mastercard.com/api/rest/version/50/merchant/{merchantId}/order/{orderid}/transaction/{transactionid}
+	 * PUT https://mtf.gateway.mastercard.com/api/rest/version/63/merchant/{merchantId}/order/{orderid}/transaction/{transactionid}
 	 *
 	 * @param string $txnId
 	 * @param string $orderId
@@ -745,7 +742,7 @@ class Mastercard_GatewayService {
 	/**
 	 * Retrieve order
 	 * Request to retrieve the details of an order and all transactions associated with this order.
-	 * https://mtf.gateway.mastercard.com/api/rest/version/50/merchant/{merchantId}/order/{orderid}
+	 * https://mtf.gateway.mastercard.com/api/rest/version/63/merchant/{merchantId}/order/{orderid}
 	 *
 	 * @param string $orderId
 	 *
@@ -815,7 +812,7 @@ class Mastercard_GatewayService {
 
 	/**
 	 * Request to retrieve the details of a transaction. For example you can retrieve the details of an authorization that you previously executed.
-	 * https://mtf.gateway.mastercard.com/api/rest/version/50/merchant/{merchantId}/order/{orderid}/transaction/{transactionid}
+	 * https://mtf.gateway.mastercard.com/api/rest/version/63/merchant/{merchantId}/order/{orderid}/transaction/{transactionid}
 	 *
 	 * @param string $orderId
 	 * @param string $txnId
@@ -839,7 +836,7 @@ class Mastercard_GatewayService {
 	/**
 	 * Request to void a previous transaction. A void will reverse a previous transaction.
 	 * Typically voids will only be successful when processed not long after the original transaction.
-	 * https://mtf.gateway.mastercard.com/api/rest/version/50/merchant/{merchantId}/order/{orderid}/transaction/{transactionid}
+	 * https://mtf.gateway.mastercard.com/api/rest/version/63/merchant/{merchantId}/order/{orderid}/transaction/{transactionid}
 	 *
 	 * @param string $orderId
 	 * @param string $txnId
@@ -875,7 +872,7 @@ class Mastercard_GatewayService {
 	 * a new transactionId, and the amount you wish to capture.
 	 * You may provide other fields (such as shipping address) if you want to update their values; however,
 	 * you must NOT provide sourceOfFunds.
-	 * https://mtf.gateway.mastercard.com/api/rest/version/50/merchant/{merchantId}/order/{orderid}/transaction/{transactionid}
+	 * https://mtf.gateway.mastercard.com/api/rest/version/63/merchant/{merchantId}/order/{orderid}/transaction/{transactionid}
 	 *
 	 * @param string $orderId
 	 * @param string $txnId
@@ -918,7 +915,7 @@ class Mastercard_GatewayService {
 	 * however, you must NOT provide sourceOfFunds.
 	 * In rare situations, you may want to refund the payer without associating the credit to a previous transaction (see Standalone Refund).
 	 * In this case, you need to provide the sourceOfFunds and a new orderId.
-	 * https://mtf.gateway.mastercard.com/api/rest/version/50/merchant/{merchantId}/order/{orderid}/transaction/{transactionid}
+	 * https://mtf.gateway.mastercard.com/api/rest/version/63/merchant/{merchantId}/order/{orderid}/transaction/{transactionid}
 	 *
 	 * @param $orderId
 	 * @param $txnId
@@ -956,7 +953,7 @@ class Mastercard_GatewayService {
 
 	/**
 	 * Request to retrieve the options available for processing a payment, for example, the credit cards and currencies.
-	 * https://mtf.gateway.mastercard.com/api/rest/version/51/merchant/{merchantId}/paymentOptionsInquiry
+	 * https://mtf.gateway.mastercard.com/api/rest/version/63/merchant/{merchantId}/paymentOptionsInquiry
 	 */
 	public function paymentOptionsInquiry() {
 		$uri = $this->apiUrl . 'paymentOptionsInquiry';
@@ -972,7 +969,7 @@ class Mastercard_GatewayService {
 	/**
 	 * Request for the gateway to store payment instrument (e.g. credit or debit cards, gift cards,
 	 * ACH bank account details) against a token, where the system generates the token id.
-	 * https://eu-gateway.mastercard.com/api/rest/version/54/merchant/{merchantId}/token
+	 * https://eu-gateway.mastercard.com/api/rest/version/63/merchant/{merchantId}/token
 	 *
 	 * @param string $session_id
 	 *

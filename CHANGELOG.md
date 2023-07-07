@@ -1,6 +1,13 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [1.4.0] - 2023-05-11
+### Improvements
+- PHP 8.1 compatibility
+- Compatibility with Wordpress 6.2 and WooCommerce 7.7
+### Changed
+- Updated the API version to 70
+
 ## [1.3.0] - 2022-06-17
 ### Changed
 - New Hosted Checkout integration is introduced
@@ -27,6 +34,3 @@ All notable changes to this project will be documented in this file.
 
 
 ## [1.0.0] - 2019-12-17
-
-
-

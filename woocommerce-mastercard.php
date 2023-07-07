@@ -1,15 +1,15 @@
 <?php
 /**
  * Plugin Name: Mastercard Payment Gateway Services
- * Description: Accept payments on your WooCommerce store using Mastercard Payment Gateway Services.
+ * Description: Accept payments on your WooCommerce store using Mastercard Payment Gateway Services. Requires PHP 7.4+ & WooCommerce 7.3+
  * Plugin URI: https://github.com/Mastercard-Gateway/gateway-woocommerce-module/
- * Author: OnTap Networks Ltd.
- * Author URI: https://www.ontapgroup.com/
- * Version: 1.3.0
+ * Author: Fingent Global Solutions Pvt. Ltd.
+ * Author URI: https://www.fingent.com/
+ * Version: 1.4.0
  */
 
 /**
- * Copyright (c) 2019-2021 Mastercard
+ * Copyright (c) 2019-2023 Mastercard
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,6 +46,10 @@ class WC_Mastercard {
 	 * @return void
 	 */
 	public function init() {
+
+		define( 'MPGS_PLUGIN_FILE', __FILE__ );
+		define( 'MPGS_PLUGIN_BASENAME', plugin_basename( MPGS_PLUGIN_FILE ) );
+
 		if ( ! class_exists( 'WC_Payment_Gateway' ) ) {
 			return;
 		}
@@ -71,6 +75,7 @@ class WC_Mastercard {
 
 		add_filter( 'woocommerce_payment_gateways', array( $this, 'add_gateways' ) );
 		add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), array( $this, 'plugin_action_links' ) );
+		add_filter( 'plugin_row_meta', array( __CLASS__, 'plugin_row_meta' ), 10, 2 );
 
 		add_action( 'rest_api_init', function () {
 			register_rest_route( 'mastercard/v1', '/checkoutSession/(?P<id>\d+)', array(
@@ -186,11 +191,47 @@ class WC_Mastercard {
 	 * @return array
 	 */
 	public function plugin_action_links( $links ) {
-		array_unshift( $links, '<a href="https://www.ontapgroup.com/uk/helpdesk/ticket/">' . __( 'Support', 'mastercard' ) . '</a>' );
-		array_unshift( $links, '<a href="http://ontap.wiki/woocommerce-mastercard-payment-gateway-services">' . __( 'Docs', 'mastercard' ) . '</a>' );
-		array_unshift( $links, '<a href="' . admin_url( 'admin.php?page=wc-settings&tab=checkout&section=mpgs_gateway' ) . '">' . __( 'Settings', 'mastercard' ) . '</a>' );
+		array_unshift( $links, '<a href="https://mpgsfgs.atlassian.net/servicedesk/customer/portals/">' . __( 'Support', 'mastercard-payment-gateway-services' ) . '</a>' );
+		array_unshift( $links, '<a href="https://mpgs.fingent.wiki/target/woocommerce-mastercard-payment-gateway-services/installation/">' . __( 'Docs', 'mastercard-payment-gateway-services' ) . '</a>' );
+		array_unshift( $links, '<a href="' . admin_url( 'admin.php?page=wc-settings&tab=checkout&section=mpgs_gateway' ) . '">' . __( 'Settings', 'mastercard-payment-gateway-services' ) . '</a>' );
 
 		return $links;
+	}
+
+	/**
+	 * Show row meta on the plugin screen.
+	 *
+	 * @param mixed $links Plugin Row Meta.
+	 * @param mixed $file  Plugin Base file.
+	 *
+	 * @return array
+	 */
+	public static function plugin_row_meta( $links, $file ) {
+
+		if ( MPGS_PLUGIN_BASENAME !== $file ) {
+			return $links;
+		}
+
+		/**
+		 * The MPGS documentation URL.
+		 *
+		 * @since 1.4.0
+		 */
+		$docs_url = apply_filters( 'mastercard_docs_url', 'https://mpgs.fingent.wiki/target/woocommerce-mastercard-payment-gateway-services/installation/' );
+
+		/**
+		 * The Mastercard Support URL.
+		 *
+		 * @since 1.4.0
+		 */
+		$support_url = apply_filters( 'mastercard_support_url', 'https://mpgsfgs.atlassian.net/servicedesk/customer/portals/' );
+
+		$row_meta = array(
+			'docs'    => '<a href="' . esc_url( $docs_url ) . '" aria-label="' . esc_attr__( 'View mastercard documentation', 'mastercard-payment-gateway-services' ) . '">' . esc_html__( 'Docs', 'mastercard-payment-gateway-services' ) . '</a>',
+			'support' => '<a href="' . esc_url( $support_url ) . '" aria-label="' . esc_attr__( 'Visit mastercard support', 'mastercard-payment-gateway-services' ) . '">' . esc_html__( 'Support', 'mastercard-payment-gateway-services' ) . '</a>',
+		);
+
+		return array_merge( $links, $row_meta );
 	}
 }
 
