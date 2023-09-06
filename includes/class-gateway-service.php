@@ -437,6 +437,7 @@ class Mastercard_GatewayService {
 	) {
 		$txnId = uniqid( sprintf( '%s-', $order['id'] ) );
 		$uri   = $this->apiUrl . 'session';
+		$order['amount']        = number_format($order['amount'], 2); // needed, MPGS not supporting float
 
 		$requestData = array(
 			'apiOperation'      => 'INITIATE_CHECKOUT',
